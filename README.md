@@ -4,6 +4,8 @@ HSVFiltering part added by Gabor Vasarhelyi (vasarhelyi@hal.elte.hu), since Jan 
 
 Current version: 1.1.1 Build 71
 
+This code lets you select colors and color ranges in HSV color space for colored blob detection. An input image or video file is needed as a first argument.
+
 Click on the top Hue map, or the bottom Color graph to change values.
 
 Mouse clicks on the image might help you as well:
