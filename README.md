@@ -11,7 +11,7 @@ This code lets you select colors and color ranges in HSV color space for colored
 
 Code tested on linux and Windows. 
 
-On linux, run './bootstrap.sh' which creates 'build', in which you can 'make'.
+On linux, run `./bootstrap.sh` which creates `build`, in which you can `make`.
 
 # usage
 
@@ -21,19 +21,19 @@ Click on the top Hue map, or the bottom Color graph to change values.
 
 ## mouse events
 
-* LEFT button: change values to 3x3 neighbor average color. Do not change range.
-* Shift+LEFT button: Average colors. Do not change range.
-* RIGHT button: include this pixel to new range as tight as possible.
-* Ctrl+RIGHT button: undo last mouseclick.
-* Ctrl+LEFT button: save current color and range and draw it on the palette.
-* Ctrl+Shift+LEFT button: clear all saved colors+ranges.
+* **LEFT** button: change values to 3x3 neighbor average color. Do not change range.
+* **Shift+LEFT** button: Average colors. Do not change range.
+* **RIGHT** button: include this pixel to new range as tight as possible.
+* **Ctrl+RIGHT** button: undo last mouseclick.
+* **Ctrl+LEFT** button: save current color and range and draw it on the palette.
+* **Ctrl+Shift+LEFT** button: clear all saved colors+ranges.
 
 ## keyboard shortcuts
 
-* nN - next frame
-* fF - 100 frame forward
-* h,s,v - start writing a number in the console, on Enter it will update color.H, .S, .V, respectively
-* H,S,V - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively
-* c,C   - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V
-* r,R   - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV
+* **nN** - next frame
+* **fF** - 100 frame forward
+* **h,s,v** - start writing a number in the console, on Enter it will update color.H, .S, .V, respectively
+* **H,S,V** - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively
+* **c,C**   - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V
+* **r,R**   - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV
 
