@@ -7,11 +7,26 @@ Current version: 1.1.1 Build 71
 
 This code lets you select colors and color ranges in HSV color space for colored blob detection.
 
+
 # install
 
-Code tested on linux and Windows. 
+Code tested on linux and Windows.
+
+## prerequisites
+
+* The code relies on OpenCv 2.x, you should install that first (yes, I know, it is old, I will upgrade only if you really need it).
+Hint: [this github gist](https://gist.github.com/arthurbeggs/06df46af94af7f261513934e56103b30) seems to be a smooth way to go (on linux).
+
+* Using [CUDA](https://developer.nvidia.com/cuda-zone) is also recommended for speedup.
+
+## linux
 
 On linux, run `./bootstrap.sh` which creates `build`, in which you can `make`.
+
+## windows
+
+For Windows, code was only tested in Visual Studio. There you need to setup your environment properly. The file called `user_macros.props` might be of help.
+
 
 # usage
 
