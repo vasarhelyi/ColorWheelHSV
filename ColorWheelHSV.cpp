@@ -14,10 +14,10 @@
 //#include <cmath>	// Used to calculate square-root for statistics
 
 // Include OpenCV libraries
-#include <cv.h>
-#include <cvaux.h>
-#include <cxcore.h>
-#include <highgui.h>
+#include <opencv/cv.h>
+#include <opencv/cvaux.h>
+#include <opencv/cxcore.h>
+#include <opencv/highgui.h>
 
 #include "ImageUtils.h"		// easy image cropping, resizing, rotating, etc
 #include "VersionNo.h"
@@ -36,8 +36,8 @@ const int TILE_TOP = 140;	//		"
 const int TILE_W = 60;		//		"
 const int TILE_H = 60;		//		"
 
-char *windowMain = "HSV Color Wheel. Click a color, or press ESC to quit";	// title of the window
-char *windowHSVFilter = "Filtered Image. Change HSV Color and Range and check result."; // title of the HSV filter window
+const char *windowMain = "HSV Color Wheel. Click a color, or press ESC to quit";	// title of the window
+const char *windowHSVFilter = "Filtered Image. Change HSV Color and Range and check result."; // title of the HSV filter window
 
 // a particle (chip/bin or total ID)
 class cColor {
@@ -196,8 +196,6 @@ void displayColorWheelHSV(void)
 {
 	static cColor localoldcolor;
 	IplImage *imageHSV = cvCreateImage(cvSize(WIDTH, HEIGHT), 8, 3);
-	int h = imageHSV->height;			// Pixel height
-	int w = imageHSV->width;			// Pixel width
 	int rowSize = imageHSV->widthStep;	// Size of row in bytes, including extra padding
 	char *imOfs = imageHSV->imageData;	// Pointer to the start of the image HSV pixels.
 
@@ -345,8 +343,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
 			int n = 2; // neighbour radius (1-->3, 2-->5 etc.)
-			if (!x) x++; if (x == inputimage->width) x--;
-			if (!y) y++; if (y == inputimage->height) y--;
+			if (!x) { x++; } if (x == inputimage->width) { x--; }
+			if (!y) { y++; } if (y == inputimage->height) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
 			for (i=-n;i<=n;i++)
 			{ 
@@ -389,8 +387,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
 			int n = 2; // neighbour radius (1-->3, 2-->5 etc.)
-			if (!x) x++; if (x == inputimage->width) x--;
-			if (!y) y++; if (y == inputimage->height) y--;
+			if (!x) { x++; } if (x == inputimage->width) { x--; }
+			if (!y) { y++; } if (y == inputimage->height) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
 			for (i=-n;i<=n;i++)
 			{ 
@@ -439,8 +437,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
 			int n = 2; // neighbour radius (1-->3, 2-->5 etc.)
-			if (!x) x++; if (x == inputimage->width) x--;
-			if (!y) y++; if (y == inputimage->height) y--;
+			if (!x) { x++; } if (x == inputimage->width) { x--; }
+			if (!y) { y++; } if (y == inputimage->height) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
 			for (i=-n;i<=n;i++)
 			{ 
@@ -654,7 +652,6 @@ int main(int argc, char **argv)
 	// wait infinitely until Esc or Ctrl-C is pressed
 	int a,b,c;
 	int i = 0;
-	int j = 0;
     int lasti=0;
     int countdigits = 0;
     char digits[40];
