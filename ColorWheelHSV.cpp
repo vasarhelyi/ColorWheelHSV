@@ -90,7 +90,7 @@ bool bInputIsImage = false;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// source: http://www.shervinemami.co.cc/blobs.html
+// source: http://www.shervinemami.info/blobs.html
 // input file type must be HSV 8-bit
 // output file type must be same size, binary 8-bit
 void cvFilterHSV2(IplImage* dstBin, IplImage* srcHSV)
