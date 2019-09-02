@@ -10,5 +10,5 @@ add_definitions(-DON_LINUX -D__STDC_CONSTANT_MACROS)
 find_package( OpenCV REQUIRED )
 find_package(CUDA)
 
-add_executable( colorWheelHSV ColorWheelHSV.cpp )
+add_executable( colorWheelHSV  src/ColorWheelHSV.cpp )
 target_link_libraries( colorWheelHSV ${OpenCV_LIBS} )

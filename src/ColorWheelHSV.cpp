@@ -14,12 +14,8 @@
 //#include <cmath>	// Used to calculate square-root for statistics
 
 // Include OpenCV libraries
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/cxcore.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 
-#include "ImageUtils.h"		// easy image cropping, resizing, rotating, etc
 #include "VersionNo.h"
 
 using namespace std;
@@ -84,8 +80,8 @@ char inputfile[256]; // inputfile is read as first command line argument
 int currentframe = 0, currentframe2 = 0; // which frame to read first?
 int framecount = 0; // how many frames are there?
 const double FILTERIMAGEDISPLAYWIDTH = 500; // display width
-IplImage* inputimage; // original image
-CvCapture * inputvideo; // video
+cv::Mat inputimage; // original image
+cv::VideoCapture inputvideo; // video
 bool bInputIsImage = false;
 
 
@@ -93,7 +89,7 @@ bool bInputIsImage = false;
 // source: http://www.shervinemami.info/blobs.html
 // input file type must be HSV 8-bit
 // output file type must be same size, binary 8-bit
-void cvFilterHSV2(IplImage* dstBin, IplImage* srcHSV)
+void cvFilterHSV(cv::Mat &dstBin, cv::Mat &srcHSV)
 {		
 	int Hmin,Hmax,Smin,Smax,Vmin,Vmax,x;
 
@@ -117,57 +113,49 @@ void cvFilterHSV2(IplImage* dstBin, IplImage* srcHSV)
 
 	// threshold H plane
 	if (Hmax >= Hmin) 
-		cvInRangeS(srcHSV,cvScalar(Hmin,Smin,Vmin),cvScalar(Hmax,Smax,Vmax),dstBin);
+		cv::inRange(srcHSV, cv::Scalar(Hmin,Smin,Vmin), cv::Scalar(Hmax,Smax,Vmax), dstBin);
 	else 
 	{
-		IplImage* tmp = cvCreateImage( cvGetSize(dstBin), 8, 1);
-		cvInRangeS(srcHSV,cvScalar(Hmin,Smin,Vmin),cvScalar(255,Smax,Vmax),dstBin);
-		cvInRangeS(srcHSV,cvScalar(0,Smin,Vmin),cvScalar(Hmax,Smax,Vmax),tmp);
-		cvOr(tmp,dstBin,dstBin);
-		cvReleaseImage(&tmp);
+        cv::Mat tmp;
+		cv::inRange(srcHSV, cv::Scalar(Hmin,Smin,Vmin), cv::Scalar(255,Smax,Vmax), dstBin);
+		cv::inRange(srcHSV, cv::Scalar(0,Smin,Vmin), cv::Scalar(Hmax,Smax,Vmax), tmp);
+		cv::bitwise_or(tmp, dstBin, dstBin);
 	}
 }
 
 void displayFilteredImage()
 {
 	// create copy image
-	IplImage* filterimage = cvCreateImage(cvGetSize(inputimage), 8, 1);
-	IplImage* outputimage = cvCreateImage(cvGetSize(inputimage), 8, 3);
+    cv::Mat filterimage, outputimage;
 	// covert to HSV
-	cvCvtColor(inputimage,outputimage,CV_BGR2HSV);
+	cv::cvtColor(inputimage, outputimage, CV_BGR2HSV);
 	// filter it
-	cvFilterHSV2(filterimage,outputimage);
-	// filter it further
-	//IplConvKernel *se21 = cvCreateStructuringElementEx(21, 21, 10, 10, CV_SHAPE_RECT, NULL);
-	//IplConvKernel *se11 = cvCreateStructuringElementEx(11, 11, 5,  5,  CV_SHAPE_RECT, NULL);
-	//cvClose(filterimage, filterimage, se21); // See completed example for cvClose definition
-	//cvOpen(filterimage, filterimage, se11);  // See completed example for cvOpen  definition
-	//cvReleaseStructuringElement(&se21);
-	//cvReleaseStructuringElement(&se11);
+    cvFilterHSV(filterimage, outputimage);
 
 	// convert binary to RGB
-	cvMerge(filterimage,filterimage,filterimage,NULL,outputimage);
+    std::vector<cv::Mat> images(3);
+    images.at(0) = filterimage;
+    images.at(1) = filterimage;
+    images.at(2) = filterimage;
+    cv::merge(images, outputimage);
 	// or with input
-	cvOr(inputimage,outputimage,outputimage);
+	cv::bitwise_or(inputimage, outputimage, outputimage);
 	// show it
-	cvShowImage(windowHSVFilter,outputimage);
-	// release images
-	cvReleaseImage(&filterimage);
-	cvReleaseImage(&outputimage);
+	cv::imshow(windowHSVFilter, outputimage);
 }
 
-void filterInputImage(int)
+void filterInputImage(int pos, void *userdata)
 {
 	displayFilteredImage();
 }
 
 int getNewFramesFromVideo(int n=1) {
-	IplImage* tempimage;
+	cv::Mat tempimage;
 	int i = 0;
 	while (i<n) {
 		if (framecount && currentframe && currentframe >= framecount) break;
-		tempimage = cvQueryFrame(inputvideo);
-		if (!tempimage) 
+        inputvideo.read(tempimage);
+		if (tempimage.empty()) 
 		{
 			cout << "error reading new frame from video!" << endl;
 			return i;
@@ -177,12 +165,14 @@ int getNewFramesFromVideo(int n=1) {
 		i++;
 	}
     // gaussian smoothing of input image to reduce speckle/interlace noise
-	if (i) cvSmooth(inputimage,inputimage,CV_GAUSSIAN,3);
+    if (i) {
+        cv::GaussianBlur(inputimage, inputimage, cv::Size(3, 3), 0);
+    }
 	return i;
 }
 
 //void getImageFromVideo(int state, void* userdata) // used by cvCreateButtom
-void getImageFromVideo(int) // used by cvCreateTrackbar
+void getImageFromVideo(int pos, void *userdata) // used by cvCreateTrackbar
 {
 //	if (currentframe >= framecount) return;
 	// TODO bug: the line below had to be commented out because in our rat stream it does not work. Always reading the next frame...
@@ -195,12 +185,12 @@ void getImageFromVideo(int) // used by cvCreateTrackbar
 void displayColorWheelHSV(void)
 {
 	static cColor localoldcolor;
-	IplImage *imageHSV = cvCreateImage(cvSize(WIDTH, HEIGHT), 8, 3);
-	int rowSize = imageHSV->widthStep;	// Size of row in bytes, including extra padding
-	char *imOfs = imageHSV->imageData;	// Pointer to the start of the image HSV pixels.
+	cv::Mat imageHSV(cv::Size(WIDTH, HEIGHT), CV_8UC3);
+	int rowSize = imageHSV.step;	// Size of row in bytes, including extra padding
+	unsigned char *imOfs = imageHSV.data;	// Pointer to the start of the image HSV pixels.
 
 	// Clear the image to grey (Saturation=0)
-	cvSet(imageHSV, cvScalar(0,0,210, 0));
+	imageHSV.setTo(cv::Scalar(0,0,210, 0));
 
 	// Draw the hue chart on the top, at double width.
 	for (int y=0; y<HUE_HEIGHT; y++) {
@@ -243,15 +233,15 @@ void displayColorWheelHSV(void)
 	// highlight the saved colors
 	for (std::vector<cColor>::iterator it = colorvec.begin(); it<colorvec.end(); ++it) {
 		// H
-		cvRectangle(imageHSV,
-			cvPoint((*it).H*2-(*it).rangeH,1),
-			cvPoint((*it).H*2+(*it).rangeH,HUE_HEIGHT-1),
-			cvScalar(0,0,0),1);
+		cv::rectangle(imageHSV,
+			cv::Point((*it).H*2-(*it).rangeH,1),
+			cv::Point((*it).H*2+(*it).rangeH,HUE_HEIGHT-1),
+			cv::Scalar(0,0,0),1);
 		// S + V
-		cvRectangle(imageHSV,
-			cvPoint((*it).S-(*it).rangeS/2,WHEEL_TOP+255-(*it).V-(*it).rangeV/2),
-			cvPoint((*it).S+(*it).rangeS/2,WHEEL_TOP+255-(*it).V+(*it).rangeV/2),
-			cvScalar((*it).H,255,255),1);
+		cv::rectangle(imageHSV,
+			cv::Point((*it).S-(*it).rangeS/2,WHEEL_TOP+255-(*it).V-(*it).rangeV/2),
+			cv::Point((*it).S+(*it).rangeS/2,WHEEL_TOP+255-(*it).V+(*it).rangeV/2),
+			cv::Scalar((*it).H,255,255),1);
 	}
 
 	// Draw a small tile of the highlighted color.
@@ -265,13 +255,11 @@ void displayColorWheelHSV(void)
 	}
 
 	// Convert the HSV image to RGB (BGR) for displaying
-	IplImage *imageRGB = cvCreateImage(cvSize(imageHSV->width, imageHSV->height), 8, 3);
-	cvCvtColor(imageHSV, imageRGB, CV_HSV2BGR);	// (note that OpenCV stores RGB images in B,G,R order.
+	cv::Mat imageRGB(cv::Size(imageHSV.cols, imageHSV.rows), CV_8UC3);
+	cv::cvtColor(imageHSV, imageRGB, CV_HSV2BGR);	// (note that OpenCV stores RGB images in B,G,R order.
 
 	// Display the RGB image
-	cvShowImage(windowMain, imageRGB);
-	cvReleaseImage( &imageRGB );
-	cvReleaseImage( &imageHSV );
+	cv::imshow(windowMain, imageRGB);
 
 	// write text to output
 	if (localoldcolor != color) {
@@ -284,7 +272,7 @@ void displayColorWheelHSV(void)
 }
 
 // This function is automatically called whenever the user changes the trackbar value.
-void hue_trackbarWasChanged(int)
+void hue_trackbarWasChanged(int pos, void *userdata)
 {
 	displayColorWheelHSV();
 }
@@ -303,8 +291,8 @@ static void mouseEvent( int ievent, int x, int y, int flags, void* param )
 		if (mouseY < HUE_HEIGHT) {
 			if (mouseX/2 < HUE_RANGE) {	// Make sure its a valid Hue
 				color.H = mouseX/2;
-				cvSetTrackbarPos("Hue", windowMain, color.H);	// update the GUI Trackbar
-				// Note that "cvSetTrackbarPos()" will implicitly call "displayColorWheelHSV()" for a changed hue.
+				cv::setTrackbarPos("Hue", windowMain, color.H);	// update the GUI Trackbar
+				// Note that "cv::setTrackbarPos()" will implicitly call "displayColorWheelHSV()" for a changed hue.
 				//displayColorWheelHSV();
 			}
 		}
@@ -313,9 +301,9 @@ static void mouseEvent( int ievent, int x, int y, int flags, void* param )
 			if (mouseX < 256) {	// Make sure its a valid Saturation & Value
 				color.S = mouseX;
 				color.V = 255 - (mouseY - WHEEL_TOP);
-				cvSetTrackbarPos("Saturation", windowMain, color.S);	// update the GUI Trackbar
-				cvSetTrackbarPos("Brightness", windowMain, color.V);	// update the GUI Trackbar
-				// Note that "cvSetTrackbarPos()" will implicitly call "displayColorWheelHSV()" for saturation or brightness.
+				cv::setTrackbarPos("Saturation", windowMain, color.S);	// update the GUI Trackbar
+				cv::setTrackbarPos("Brightness", windowMain, color.V);	// update the GUI Trackbar
+				// Note that "cv::setTrackbarPos()" will implicitly call "displayColorWheelHSV()" for saturation or brightness.
 				//displayColorWheelHSV();
 			}
 		}
@@ -339,32 +327,30 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 		// Shift+left button click: average colors
 		else if (flags & CV_EVENT_FLAG_SHIFTKEY) {
 			oldcolor = color; // save old color
-			CvScalar pixel;
+			cv::Vec3d pixel;
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
 			int n = 2; // neighbour radius (1-->3, 2-->5 etc.)
-			if (!x) { x++; } if (x == inputimage->width) { x--; }
-			if (!y) { y++; } if (y == inputimage->height) { y--; }
+			if (!x) { x++; } if (x == inputimage.cols) { x--; }
+			if (!y) { y++; } if (y == inputimage.rows) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
 			for (i=-n;i<=n;i++)
 			{ 
 				for (j=-n;j<=n;j++) 
 				{
-					uchar* temp = &((uchar*)(inputimage->imageData + inputimage->widthStep*(y+j)))[(x+i)*3];
-					pixel.val[0] += temp[0];
-					pixel.val[1] += temp[1];
-					pixel.val[2] += temp[2];
+					pixel.val[0] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[0];
+					pixel.val[1] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[1];
+					pixel.val[2] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[2];
 				}
 			}
 			n = (2*n+1)*(2*n+1);
 			for (i=0;i<3;i++) pixel.val[i] /= n;
 			// get pixel color in HSV format
-			//CvScalar pixel = cvGet2D(inputimage,x,y); // bugbugbug this does not work somehow... BUT why???
-			IplImage* tmp = cvCreateImage(cvSize(1,1),IPL_DEPTH_8U,3);
-			cvSet2D(tmp,0,0,pixel);
-			cvCvtColor(tmp,tmp,CV_BGR2HSV);
-			pixel = cvGet2D(tmp,0,0);
-			cvReleaseImage(&tmp);
+			//Cv::Scalar pixel = cvGet2D(inputimage,x,y); // bugbugbug this does not work somehow... BUT why???
+			cv::Mat tmp(cv::Size(1,1), CV_8UC3);
+            tmp.at<cv::Vec3b>(0, 0) = pixel;
+			cv::cvtColor(tmp, tmp, CV_BGR2HSV);
+            pixel = tmp.at<cv::Vec3b>(0, 0);
 			// set new average color				
 			color.H = (color.H * avgcolornum + (int)pixel.val[0])/(avgcolornum+1);
 			color.S = (color.S * avgcolornum + (int)pixel.val[1])/(avgcolornum+1);
@@ -374,49 +360,46 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 			avgpixnum = 0;
 			// update the GUI Trackbars
 			cout << avgcolornum << " colors averaged" << endl;
-			cvSetTrackbarPos("Hue", windowMain, color.H);
-			cvSetTrackbarPos("Saturation", windowMain, color.S);
-			cvSetTrackbarPos("Brightness", windowMain, color.V);
+			cv::setTrackbarPos("Hue", windowMain, color.H);
+			cv::setTrackbarPos("Saturation", windowMain, color.S);
+			cv::setTrackbarPos("Brightness", windowMain, color.V);
 		}
 		// left mouse click: set values to pixel color (3x3 neighbour avg)
 		else {
 			oldcolor = color; // save old color
 			avgpixnum = 0; // reset counter
 			avgcolornum = 0; // reset counter
-			CvScalar pixel;
+			cv::Vec3d pixel;
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
 			int n = 2; // neighbour radius (1-->3, 2-->5 etc.)
-			if (!x) { x++; } if (x == inputimage->width) { x--; }
-			if (!y) { y++; } if (y == inputimage->height) { y--; }
+			if (!x) { x++; } if (x == inputimage.cols) { x--; }
+			if (!y) { y++; } if (y == inputimage.rows) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
 			for (i=-n;i<=n;i++)
 			{ 
 				for (j=-n;j<=n;j++) 
 				{
-					uchar* temp = &((uchar*)(inputimage->imageData + inputimage->widthStep*(y+j)))[(x+i)*3];
-					pixel.val[0] += temp[0];
-					pixel.val[1] += temp[1];
-					pixel.val[2] += temp[2];
+					pixel.val[0] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[0];
+					pixel.val[1] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[1];
+					pixel.val[2] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[2];
 				}
 			}
 			n = (2*n+1)*(2*n+1);
 			for (i=0;i<3;i++) pixel.val[i] /= n;
 			// get pixel color in HSV format
-			//CvScalar pixel = cvGet2D(inputimage,x,y); // bugbugbug this does not work somehow... BUT why???
-			IplImage* tmp = cvCreateImage(cvSize(1,1),IPL_DEPTH_8U,3);
-			cvSet2D(tmp,0,0,pixel);
-			cvCvtColor(tmp,tmp,CV_BGR2HSV);
-			pixel = cvGet2D(tmp,0,0);
-			cvReleaseImage(&tmp);
+			cv::Mat tmp(cv::Size(1,1), CV_8UC3);
+            tmp.at<cv::Vec3b>(0, 0) = pixel;
+			cv::cvtColor(tmp, tmp, CV_BGR2HSV);
+            pixel = tmp.at<cv::Vec3b>(0, 0);
 			// store new value
 			color.H = (int)pixel.val[0];
 			color.S = (int)pixel.val[1];
 			color.V = (int)pixel.val[2];
 			// update the GUI Trackbars
-			cvSetTrackbarPos("Hue", windowMain, color.H);
-			cvSetTrackbarPos("Saturation", windowMain, color.S);
-			cvSetTrackbarPos("Brightness", windowMain, color.V);
+			cv::setTrackbarPos("Hue", windowMain, color.H);
+			cv::setTrackbarPos("Saturation", windowMain, color.S);
+			cv::setTrackbarPos("Brightness", windowMain, color.V);
 		}
 	}
 	// right button
@@ -433,32 +416,30 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 		else
 		{
 			oldcolor = color; // save old color
-			CvScalar pixel;
+			cv::Vec3d pixel;
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
 			int n = 2; // neighbour radius (1-->3, 2-->5 etc.)
-			if (!x) { x++; } if (x == inputimage->width) { x--; }
-			if (!y) { y++; } if (y == inputimage->height) { y--; }
+			if (!x) { x++; } if (x == inputimage.cols) { x--; }
+			if (!y) { y++; } if (y == inputimage.rows) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
 			for (i=-n;i<=n;i++)
 			{ 
 				for (j=-n;j<=n;j++) 
 				{
-					uchar* temp = &((uchar*)(inputimage->imageData + inputimage->widthStep*(y+j)))[(x+i)*3];
-					pixel.val[0] += temp[0];
-					pixel.val[1] += temp[1];
-					pixel.val[2] += temp[2];
+					pixel.val[0] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[0];
+					pixel.val[1] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[1];
+					pixel.val[2] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[2];
 				}
 			}
 			n = (2*n+1)*(2*n+1);
 			for (i=0;i<3;i++) pixel.val[i] /= n;
 			// get pixel color in HSV format
 			//CvScalar pixel = cvGet2D(inputimage,x,y); // bugbugbug this does not work somehow... BUT why???
-			IplImage* tmp = cvCreateImage(cvSize(1,1),IPL_DEPTH_8U,3);
-			cvSet2D(tmp,0,0,pixel);
-			cvCvtColor(tmp,tmp,CV_BGR2HSV);
-			pixel = cvGet2D(tmp,0,0);
-			cvReleaseImage(&tmp);
+			cv::Mat tmp(cv::Size(1,1),CV_8UC3);
+            tmp.at<cv::Vec3b>(0, 0) = pixel;
+			cv::cvtColor(tmp,tmp,CV_BGR2HSV);
+            pixel = tmp.at<cv::Vec3b>(0, 0);
 			// if this is the first pixel, reset range
 			if (!avgpixnum)
 			{
@@ -532,12 +513,12 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 		} // right button pressed (no Ctrl)
 
 		// update the GUI Trackbars
-		cvSetTrackbarPos("Hue", windowMain, color.H);
-		cvSetTrackbarPos("Saturation", windowMain, color.S);
-		cvSetTrackbarPos("Brightness", windowMain, color.V);
-		cvSetTrackbarPos("rangeH", windowMain, color.rangeH);
-		cvSetTrackbarPos("rangeS", windowMain, color.rangeS);
-		cvSetTrackbarPos("rangeV", windowMain, color.rangeV);
+		cv::setTrackbarPos("Hue", windowMain, color.H);
+        cv::setTrackbarPos("Saturation", windowMain, color.S);
+        cv::setTrackbarPos("Brightness", windowMain, color.V);
+        cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
+        cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
+        cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
 	} // right button pressed
 }
 
@@ -574,7 +555,7 @@ int main(int argc, char **argv)
 	}
 	else if (argc == 2)
 	{
-		strcpy(inputfile,argv[1]);
+		strcpy_s(inputfile, sizeof(inputfile), argv[1]);
 	}
 	else if (argc < 2)
 	{
@@ -583,11 +564,11 @@ int main(int argc, char **argv)
 	}
 	cout << endl << "opening file " << inputfile << endl;
 	// init input image
-	inputvideo = cvCaptureFromAVI(inputfile);
-	if (!inputvideo)
+	inputvideo.open(inputfile);
+	if (!inputvideo.isOpened())
 	{
-		inputimage = cvLoadImage(inputfile);
-		if (!inputimage) {
+		inputimage = cv::imread(inputfile);
+		if (inputimage.empty()) {
 			cout << "error opening input video file!" << endl;
 			return -1;
 		} else {
@@ -609,27 +590,27 @@ int main(int argc, char **argv)
 	}
 
 	// Create a GUI window
-	cvNamedWindow(windowMain);
+	cv::namedWindow(windowMain);
 	// Allow the user to change the Hue value upto 179, since OpenCV uses Hues upto 180.
-	cvCreateTrackbar( "Hue", windowMain, &color.H, HUE_RANGE-1, &hue_trackbarWasChanged );
-	cvCreateTrackbar( "Saturation", windowMain, &color.S, 255, &hue_trackbarWasChanged );
-	cvCreateTrackbar( "Brightness", windowMain, &color.V, 255, &hue_trackbarWasChanged );
+	cv::createTrackbar( "Hue", windowMain, &color.H, HUE_RANGE-1, &hue_trackbarWasChanged );
+	cv::createTrackbar( "Saturation", windowMain, &color.S, 255, &hue_trackbarWasChanged );
+	cv::createTrackbar( "Brightness", windowMain, &color.V, 255, &hue_trackbarWasChanged );
 	// Allow the user to click on Hue chart to change the hue, or click on the color wheel to see a value.
-    cvSetMouseCallback( windowMain, mouseEvent);
+    cv::setMouseCallback( windowMain, mouseEvent);
 
 	// TODO bug: sometimes first readout returns 0 in Win32. Why?
 	// TODO bug: rat stream is buggy, framecount can be invalid
 	if (!bInputIsImage) {
-		framecount = (int)cvGetCaptureProperty(inputvideo,CV_CAP_PROP_FRAME_COUNT);
+		framecount = (int)inputvideo.get(CV_CAP_PROP_FRAME_COUNT);
 	} else {
 		framecount = 1;
 	}
 	// TODO bug: max trackbar range in Win32 is 32767
 	if (framecount>32768) framecount = 32768;
 	cout << " framecount: " << framecount << endl;
-	//cvSetCaptureProperty(inputvideo,CV_CAP_PROP_POS_FRAMES,currentframe);
+	//inputvideo.set(CV_CAP_PROP_POS_FRAMES,currentframe);
 	if (!bInputIsImage) {
-		cvCreateTrackbar( "frame", windowMain, &currentframe2, framecount-1, &getImageFromVideo );
+		cv::createTrackbar( "frame", windowMain, &currentframe2, framecount-1, &getImageFromVideo );
 	}
 	// TODO bug: unreferenced external symbol cvCreateButton
 	// solution: http://stackoverflow.com/questions/4458668/opencv-2-2-createbutton-lnk-2019-error-in-visual-studio-2010
@@ -637,14 +618,14 @@ int main(int argc, char **argv)
 	//cvCreateButton("frame",getImageFromVideo,NULL,CV_PUSH_BUTTON,0);
 
 	// init HSV filter part
-	cvNamedWindow(windowHSVFilter, CV_WINDOW_NORMAL);
-	cvResizeWindow(windowHSVFilter,(int)FILTERIMAGEDISPLAYWIDTH,(int)(inputimage->height*FILTERIMAGEDISPLAYWIDTH/inputimage->width));
+	cv::namedWindow(windowHSVFilter, CV_WINDOW_NORMAL);
+	cv::resizeWindow(windowHSVFilter,(int)FILTERIMAGEDISPLAYWIDTH,(int)(inputimage.rows*FILTERIMAGEDISPLAYWIDTH/inputimage.cols));
 	// Allow the user to change the Hue filter range value upto 179, since OpenCV uses Hues upto 180.
-	cvCreateTrackbar( "rangeH", windowMain, &color.rangeH, HUE_RANGE-1, &filterInputImage );
-	cvCreateTrackbar( "rangeS", windowMain, &color.rangeS, 255, &filterInputImage );
-	cvCreateTrackbar( "rangeV", windowMain, &color.rangeV, 255, &filterInputImage );
+	cv::createTrackbar( "rangeH", windowMain, &color.rangeH, HUE_RANGE-1, &filterInputImage );
+	cv::createTrackbar( "rangeS", windowMain, &color.rangeS, 255, &filterInputImage );
+	cv::createTrackbar( "rangeV", windowMain, &color.rangeV, 255, &filterInputImage );
 	// Allow the user to click on input image to define basic HSV value
-	cvSetMouseCallback( windowHSVFilter, mouseEvent2);
+	cv::setMouseCallback( windowHSVFilter, mouseEvent2);
 
 	// initialize display
 	displayColorWheelHSV();
@@ -656,18 +637,18 @@ int main(int argc, char **argv)
     int countdigits = 0;
     char digits[40];
 	while (i != 27 && i != 3 && i != -1) {
-		i = cvWaitKey(0);
+		i = cv::waitKey(0);
 		if (!bInputIsImage) {
 			// f, F
 			if (i == 'f' || i == 'F') {
 				getNewFramesFromVideo(100);
-				cvSetTrackbarPos("frame", windowMain, currentframe);
+				cv::setTrackbarPos("frame", windowMain, currentframe);
 			
 			} 
 			// n, N
 			else if (i == 'n' || i == 'N') {
 				getNewFramesFromVideo();
-				cvSetTrackbarPos("frame", windowMain, currentframe);
+				cv::setTrackbarPos("frame", windowMain, currentframe);
 			}
 		}
 		// h, H, s, S, v, V
@@ -705,39 +686,39 @@ int main(int argc, char **argv)
 			cout << endl;
             if (lasti == 'h') {
                 color.H = atoi(digits);
-            	cvSetTrackbarPos("Hue", windowMain, color.H);
+            	cv::setTrackbarPos("Hue", windowMain, color.H);
 			} else if (lasti == 'H') {
                 color.rangeH = atoi(digits);
-            	cvSetTrackbarPos("rangeH", windowMain, color.rangeH);
+            	cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
 			} else if (lasti == 's') {
                 color.S = atoi(digits);
-            	cvSetTrackbarPos("Saturation", windowMain, color.S);
+            	cv::setTrackbarPos("Saturation", windowMain, color.S);
 			} else if (lasti == 'S') {
                 color.rangeS = atoi(digits);
-            	cvSetTrackbarPos("rangeS", windowMain, color.rangeS);
+            	cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
 			} else if (lasti == 'v') {
                 color.V = atoi(digits);
-            	cvSetTrackbarPos("Brightness", windowMain, color.V);
+            	cv::setTrackbarPos("Brightness", windowMain, color.V);
 			} else if (lasti == 'V') {
                 color.rangeV = atoi(digits);
-            	cvSetTrackbarPos("rangeV", windowMain, color.rangeV);
+            	cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
 			} else if (lasti == 'c') {
                 if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
             		color.H = a;
 					color.S = b;
 					color.V = c;
-					cvSetTrackbarPos("Hue", windowMain, color.H);
-            		cvSetTrackbarPos("Saturation", windowMain, color.S);
-            		cvSetTrackbarPos("Brightness", windowMain, color.V);
+					cv::setTrackbarPos("Hue", windowMain, color.H);
+            		cv::setTrackbarPos("Saturation", windowMain, color.S);
+                    cv::setTrackbarPos("Brightness", windowMain, color.V);
 				}
 			} else if (lasti == 'r') {
                 if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
             		color.rangeH = a;
 					color.rangeS = b;
 					color.rangeV = c;
-					cvSetTrackbarPos("rangeH", windowMain, color.rangeH);
-            		cvSetTrackbarPos("rangeS", windowMain, color.rangeS);
-            		cvSetTrackbarPos("rangeV", windowMain, color.rangeV);
+                    cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
+                    cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
+                    cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
 				}
 			}
         }
@@ -748,8 +729,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	cvDestroyAllWindows();
-	// cvReleaseImage(&inputimage); // TODO bug: why is it buggy??? Unhandled exception...
+	cv::destroyAllWindows();
 	
 	return 0;
 }

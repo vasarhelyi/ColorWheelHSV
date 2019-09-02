@@ -232,20 +232,18 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ColorWheelHSV.cpp" />
-    <ClCompile Include="ImageUtils.cpp" />
+    <ClCompile Include="src\ColorWheelHSV.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ImageUtils.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="resource1.h" />
+    <ClInclude Include="src\resource.h" />
+    <ClInclude Include="src\resource1.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\ColorWheelHSV.ico" />
     <None Include="res\ColorWheelHSV.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ColorWheelHSV.rc" />
+    <ResourceCompile Include="res\ColorWheelHSV.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\ColorWheelHSV.bmp" />
@@ -255,7 +253,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties RESOURCE_FILE="PiGeoNS.rc" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_UpdateFileVersion="True" BuildVersion_BuildAction="Build" BuildVersion_BuildVersioningStyle="None.None.None.Increment" _x007B_8856F961-340A-11D0-A96B-00C04FD705A2_x007D_="CExplorer1" />
+      <UserProperties RESOURCE_FILE="res\ColorWheelHSV.rc" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_UpdateFileVersion="True" BuildVersion_BuildAction="Build" BuildVersion_BuildVersioningStyle="None.None.None.Increment" _x007B_8856F961-340A-11D0-A96B-00C04FD705A2_x007D_="CExplorer1" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>
