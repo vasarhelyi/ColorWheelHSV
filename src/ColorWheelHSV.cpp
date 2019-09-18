@@ -564,12 +564,12 @@ int main(int argc, char **argv)
 	}
 	cout << endl << "opening file " << inputfile << endl;
 	// init input image
-	inputvideo.open(inputfile);
-	if (!inputvideo.isOpened())
+	if (!inputvideo.open(inputfile))
 	{
+		cout << "error opening input video file, trying as image..." << endl;
 		inputimage = cv::imread(inputfile);
 		if (inputimage.empty()) {
-			cout << "error opening input video file!" << endl;
+			cout << "error opening input image file!" << endl;
 			return -1;
 		} else {
 			bInputIsImage = true;
