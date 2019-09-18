@@ -555,7 +555,7 @@ int main(int argc, char **argv)
 	}
 	else if (argc == 2)
 	{
-		strcpy_s(inputfile, sizeof(inputfile), argv[1]);
+		strncpy(inputfile, argv[1], sizeof(inputfile));
 	}
 	else if (argc < 2)
 	{
