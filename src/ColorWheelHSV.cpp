@@ -539,13 +539,13 @@ int main(int argc, char **argv)
 	cout << "  Ctrl+LEFT button: save current color and range and draw it on the palette." << endl;
 	cout << "  Ctrl+Shift+LEFT button: clear all saved colors+ranges." << endl;
 	cout << endl;
-	cout << "Keyboard shortcuts:" << endl;
-	cout << "  nN - next frame" << endl;
-	cout << "  fF - 100 frame forward" << endl;
-	cout << "  h,s,v - start writing a number in the console, on Enter it will update color.H, .S, .V, respectively" << endl;
-	cout << "  H,S,V - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively" << endl;
-	cout << "  c,C   - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
-	cout << "  r,R   - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
+	cout << "Keyboard shortcuts (working only when the image window is the active one):" << endl;
+	cout << "  n, N - next frame" << endl;
+	cout << "  f, F - 100 frame forward" << endl;
+	cout << "  h, s, v - start writing a number in the console, on Enter it will update color.H, .S, .V, respectively" << endl;
+	cout << "  H, S, V - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively" << endl;
+	cout << "  c, C   - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
+	cout << "  r, R   - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
 	cout << endl;
 
 	if (argc > 2)
