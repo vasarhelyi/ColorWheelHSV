@@ -67,13 +67,14 @@ public:
 	}
 };
 
-cColor color, oldcolor;
+cColor color;
 std::vector<cColor> colorvec; // to draw all saved colors to see how they are organized
+std::vector<cColor> colorhistory; // to be able to have longer undo
 
 int mouseX = -1;	// Position in the window that a user clicked the mouse button.
 int mouseY = -1;	//		"
 
-int avgpixnum = 0; // how many pixels to average on right mouse click?
+int avgpixnum = 1; // how many pixels to average on right mouse click?
 int avgcolornum = 0; // how many colors have been selected with Shift-Left mouse to average color?
 
 char inputfile[256]; // inputfile is read as first command line argument
@@ -184,7 +185,7 @@ void getImageFromVideo(int pos, void *userdata) // used by cvCreateTrackbar
 
 void displayColorWheelHSV(void)
 {
-	static cColor localoldcolor;
+	static cColor oldcolor;
 	cv::Mat imageHSV(cv::Size(WIDTH, HEIGHT), CV_8UC3);
 	int rowSize = imageHSV.step;	// Size of row in bytes, including extra padding
 	unsigned char *imOfs = imageHSV.data;	// Pointer to the start of the image HSV pixels.
@@ -262,10 +263,10 @@ void displayColorWheelHSV(void)
 	cv::imshow(windowMain, imageRGB);
 
 	// write text to output
-	if (localoldcolor != color) {
+	if (oldcolor != color) {
 		cout	<< "HSV: " << color.H << " " << color.S << " " << color.V 
 				<< " rangeHSV: " << color.rangeH << " " << color.rangeS << " " << color.rangeV << endl;
-		localoldcolor = color;
+		oldcolor = color;
 	}
 	// update HSV filter window
 	displayFilteredImage();
@@ -282,7 +283,7 @@ static void mouseEvent( int ievent, int x, int y, int flags, void* param )
 {
 	// Check if they clicked or dragged a mouse button or not.
 	if (flags & CV_EVENT_FLAG_LBUTTON) {
-		oldcolor = color; // save old color
+		colorhistory.push_back(color); // save old color
 		mouseX = x;
 		mouseY = y;
 		//cout << mouseX << "," << mouseY << endl;
@@ -326,7 +327,7 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 		}
 		// Shift+left button click: average colors
 		else if (flags & CV_EVENT_FLAG_SHIFTKEY) {
-			oldcolor = color; // save old color
+            colorhistory.push_back(color); // save old color
 			cv::Vec3d pixel;
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
@@ -352,12 +353,12 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 			cv::cvtColor(tmp, tmp, CV_BGR2HSV);
             pixel = tmp.at<cv::Vec3b>(0, 0);
 			// set new average color				
-			color.H = (color.H * avgcolornum + (int)pixel.val[0])/(avgcolornum+1);
-			color.S = (color.S * avgcolornum + (int)pixel.val[1])/(avgcolornum+1);
-			color.V = (color.V * avgcolornum + (int)pixel.val[2])/(avgcolornum+1);
-			// increase own, reset other counter
+			color.H = (color.H * avgcolornum + (int)pixel.val[0]) / (avgcolornum + 1);
+			color.S = (color.S * avgcolornum + (int)pixel.val[1]) / (avgcolornum + 1);
+			color.V = (color.V * avgcolornum + (int)pixel.val[2]) / (avgcolornum + 1);
+			// increase own, counter
 			avgcolornum++;
-			avgpixnum = 0;
+			avgpixnum = 1; // reset counter to current selection
 			// update the GUI Trackbars
 			cout << avgcolornum << " colors averaged" << endl;
 			cv::setTrackbarPos("Hue", windowMain, color.H);
@@ -366,8 +367,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 		}
 		// left mouse click: set values to pixel color (3x3 neighbour avg)
 		else {
-			oldcolor = color; // save old color
-			avgpixnum = 0; // reset counter
+            colorhistory.push_back(color); // save old color
+			avgpixnum = 1; // reset counter to current selection
 			avgcolornum = 0; // reset counter
 			cv::Vec3d pixel;
 			int i,j;
@@ -403,19 +404,31 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 		}
 	}
 	// right button
-	else if (flags & CV_EVENT_FLAG_RBUTTON)
-	{
-		// Ctrl+right button click: restore last color
-		if (flags & CV_EVENT_FLAG_CTRLKEY)
-		{
-			color = oldcolor;
-			if (avgpixnum) avgpixnum--;
-			if (avgcolornum) avgcolornum--;
-		}
+    else if (flags & CV_EVENT_FLAG_RBUTTON)
+    {
+        // Ctrl+Shift+right button click: reset tight inclusion
+        if ((flags & CV_EVENT_FLAG_CTRLKEY) && (flags & CV_EVENT_FLAG_SHIFTKEY)) {
+            avgpixnum = 0;
+            avgcolornum = 0;
+            cout << " averaging and multi-color inclusion is reset" << endl;
+        }
+        // Ctrl+right or Shift+right button click: restore last color / undo
+        else if ((flags & CV_EVENT_FLAG_CTRLKEY) || (flags & CV_EVENT_FLAG_SHIFTKEY)) {
+            if (colorhistory.size() > 0) {
+                color = colorhistory.back();
+                colorhistory.pop_back();
+            }
+            if (avgpixnum > 1) {
+                avgpixnum--;
+            }
+            if (avgcolornum) {
+                avgcolornum--;
+            }
+            cout << " undo" << endl;
+        }
 		// right button: adjust range exactly to fit all that are pointed
-		else
-		{
-			oldcolor = color; // save old color
+		else {
+            colorhistory.push_back(color); // save old color
 			cv::Vec3d pixel;
 			int i,j;
 			// average (2*n+1)^2 pixel neighborhood
@@ -534,11 +547,13 @@ int main(int argc, char **argv)
 	cout << "Mouse clicks on the image might help you as well:" << endl;
 	cout << "  LEFT button: change values to 3x3 neighbor average color. Do not change range." << endl;
 	cout << "  Shift+LEFT button: Average colors. Do not change range." << endl;
-	cout << "  RIGHT button: include this pixel to new range as tight as possible." << endl;
-	cout << "  Ctrl+RIGHT button: undo last mouseclick." << endl;
-	cout << "  Ctrl+LEFT button: save current color and range and draw it on the palette." << endl;
-	cout << "  Ctrl+Shift+LEFT button: clear all saved colors+ranges." << endl;
-	cout << endl;
+    cout << "  Ctrl+LEFT button: save current color and range and draw it on the palette." << endl;
+    cout << "  Ctrl+Shift+LEFT button: clear all saved colors+ranges." << endl;
+    cout << endl;
+    cout << "  RIGHT button: include this pixel to new range as tight as possible." << endl;
+    cout << "  Shift+RIGHT button: undo last mouseclick" << endl;
+    cout << "  Ctrl+RIGHT button: undo last mouseclick" << endl;
+    cout << endl;
 	cout << "Keyboard shortcuts (working only when the image window is the active one):" << endl;
 	cout << "  n, N - next frame" << endl;
 	cout << "  f, F - 100 frame forward" << endl;
