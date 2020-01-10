@@ -406,14 +406,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 	// right button
     else if (flags & CV_EVENT_FLAG_RBUTTON)
     {
-        // Ctrl+Shift+right button click: reset tight inclusion
-        if ((flags & CV_EVENT_FLAG_CTRLKEY) && (flags & CV_EVENT_FLAG_SHIFTKEY)) {
-            avgpixnum = 0;
-            avgcolornum = 0;
-            cout << " averaging and multi-color inclusion is reset" << endl;
-        }
         // Ctrl+right or Shift+right button click: restore last color / undo
-        else if ((flags & CV_EVENT_FLAG_CTRLKEY) || (flags & CV_EVENT_FLAG_SHIFTKEY)) {
+        if (((flags & CV_EVENT_FLAG_CTRLKEY) > 0) != ((flags & CV_EVENT_FLAG_SHIFTKEY) > 0)) {
             if (colorhistory.size() > 0) {
                 color = colorhistory.back();
                 colorhistory.pop_back();
@@ -453,9 +447,11 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
             tmp.at<cv::Vec3b>(0, 0) = pixel;
 			cv::cvtColor(tmp,tmp,CV_BGR2HSV);
             pixel = tmp.at<cv::Vec3b>(0, 0);
-			// if this is the first pixel, reset range
-			if (!avgpixnum)
-			{
+			// if Ctrl+Shift+right button is pressed, reset tight inclusion
+            if ((flags & CV_EVENT_FLAG_CTRLKEY) && (flags & CV_EVENT_FLAG_SHIFTKEY)) {
+                avgpixnum = 0;
+                avgcolornum = 0;
+                cout << " averaging and multi-color inclusion is reset" << endl;
 				color.rangeH = 1;
 				color.rangeS = 1;
 				color.rangeV = 1;
@@ -463,9 +459,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 				color.S = (int)pixel.val[1];
 				color.V = (int)pixel.val[2];
 			}
-			// include this in the ranges
-			else
-			{
+			// otherwise, include new color in the ranges
+			else {
 				////////////////// HUE ///////////////////
 				// get hue range
 				int Hmax,Hmin;
@@ -553,6 +548,7 @@ int main(int argc, char **argv)
     cout << "  RIGHT button: include this pixel to new range as tight as possible." << endl;
     cout << "  Shift+RIGHT button: undo last mouseclick" << endl;
     cout << "  Ctrl+RIGHT button: undo last mouseclick" << endl;
+    cout << "  Ctrl+Shift+RIGHT button: reset inclusion of multiple colors" << endl;
     cout << endl;
 	cout << "Keyboard shortcuts (working only when the image window is the active one):" << endl;
 	cout << "  n, N - next frame" << endl;
