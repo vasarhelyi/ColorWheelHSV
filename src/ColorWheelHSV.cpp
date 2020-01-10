@@ -90,8 +90,7 @@ bool bInputIsImage = false;
 // source: http://www.shervinemami.info/blobs.html
 // input file type must be HSV 8-bit
 // output file type must be same size, binary 8-bit
-void cvFilterHSV(cv::Mat &dstBin, cv::Mat &srcHSV)
-{		
+void cvFilterHSV(cv::Mat &dstBin, cv::Mat &srcHSV) {		
 	int Hmin,Hmax,Smin,Smax,Vmin,Vmax,x;
 
 	// Hue: 0-180, circular continuous
@@ -124,8 +123,7 @@ void cvFilterHSV(cv::Mat &dstBin, cv::Mat &srcHSV)
 	}
 }
 
-void displayFilteredImage()
-{
+void displayFilteredImage() {
 	// create copy image
     cv::Mat filterimage, outputimage;
 	// covert to HSV
@@ -143,11 +141,6 @@ void displayFilteredImage()
 	cv::bitwise_or(inputimage, outputimage, outputimage);
 	// show it
 	cv::imshow(windowHSVFilter, outputimage);
-}
-
-void filterInputImage(int pos, void *userdata)
-{
-	displayFilteredImage();
 }
 
 int getNewFramesFromVideo(int n=1) {
@@ -173,8 +166,7 @@ int getNewFramesFromVideo(int n=1) {
 }
 
 //void getImageFromVideo(int state, void* userdata) // used by cvCreateButtom
-void getImageFromVideo(int pos, void *userdata) // used by cvCreateTrackbar
-{
+void getImageFromVideo(int pos, void *userdata) { // used by cvCreateTrackbar
 //	if (currentframe >= framecount) return;
 	// TODO bug: the line below had to be commented out because in our rat stream it does not work. Always reading the next frame...
 	//cvSetCaptureProperty(inputvideo,CV_CAP_PROP_POS_FRAMES,currentframe);
@@ -183,8 +175,7 @@ void getImageFromVideo(int pos, void *userdata) // used by cvCreateTrackbar
 	currentframe2 = currentframe;
 }
 
-void displayColorWheelHSV(void)
-{
+void displayColorWheelHSV(void) {
 	static cColor oldcolor;
 	cv::Mat imageHSV(cv::Size(WIDTH, HEIGHT), CV_8UC3);
 	int rowSize = imageHSV.step;	// Size of row in bytes, including extra padding
@@ -273,14 +264,40 @@ void displayColorWheelHSV(void)
 }
 
 // This function is automatically called whenever the user changes the trackbar value.
-void hue_trackbarWasChanged(int pos, void *userdata)
-{
+void color_trackbarWasChanged(int pos, void *userdata) {
 	displayColorWheelHSV();
 }
 
+void undo(bool bUpdateGUI=true) {
+    if (colorhistory.size() > 0) {
+        color = colorhistory.back();
+        colorhistory.pop_back();
+        cout << "stepped back one color" << endl;
+    }
+    else {
+        cout << "nothing to undo" << endl;
+    }
+    // TODO: this is not very clean how above and below should relate...
+    if (avgpixnum > 1) {
+        avgpixnum--;
+    }
+    if (avgcolornum) {
+        avgcolornum--;
+    }
+    
+    if (bUpdateGUI) {
+        // update the GUI Trackbars
+        cv::setTrackbarPos("Hue", windowMain, color.H);
+        cv::setTrackbarPos("Saturation", windowMain, color.S);
+        cv::setTrackbarPos("Brightness", windowMain, color.V);
+        cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
+        cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
+        cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
+    }
+}
+
 // This function is automatically called whenever the user clicks the mouse in the window.
-static void mouseEvent( int ievent, int x, int y, int flags, void* param )
-{
+static void mouseEvent( int ievent, int x, int y, int flags, void* param ) {
 	// Check if they clicked or dragged a mouse button or not.
 	if (flags & CV_EVENT_FLAG_LBUTTON) {
 		colorhistory.push_back(color); // save old color
@@ -312,11 +329,9 @@ static void mouseEvent( int ievent, int x, int y, int flags, void* param )
 }
 
 // This function is automatically called whenever the user clicks the mouse in the HSV filter window.
-void mouseEvent2( int ievent, int x, int y, int flags, void* param )
-{
+void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 	// left mouse click
-	if (flags & CV_EVENT_FLAG_LBUTTON)
-	{
+	if (flags & CV_EVENT_FLAG_LBUTTON) {
 		// Ctrl+left button click: save color, Ctrl+Shift+left: clear all colors
 		if (flags & CV_EVENT_FLAG_CTRLKEY)
 		{
@@ -404,21 +419,10 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param )
 		}
 	}
 	// right button
-    else if (flags & CV_EVENT_FLAG_RBUTTON)
-    {
+    else if (flags & CV_EVENT_FLAG_RBUTTON) {
         // Ctrl+right or Shift+right button click: restore last color / undo
         if (((flags & CV_EVENT_FLAG_CTRLKEY) > 0) != ((flags & CV_EVENT_FLAG_SHIFTKEY) > 0)) {
-            if (colorhistory.size() > 0) {
-                color = colorhistory.back();
-                colorhistory.pop_back();
-            }
-            if (avgpixnum > 1) {
-                avgpixnum--;
-            }
-            if (avgcolornum) {
-                avgcolornum--;
-            }
-            cout << " undo" << endl;
+            undo(false);
         }
 		// right button: adjust range exactly to fit all that are pointed
 		else {
@@ -546,8 +550,8 @@ int main(int argc, char **argv)
     cout << "  Ctrl+Shift+LEFT button: clear all saved colors+ranges." << endl;
     cout << endl;
     cout << "  RIGHT button: include this pixel to new range as tight as possible." << endl;
-    cout << "  Shift+RIGHT button: undo last mouseclick" << endl;
-    cout << "  Ctrl+RIGHT button: undo last mouseclick" << endl;
+    cout << "  Shift+RIGHT button: undo last mouseclick or console color input" << endl;
+    cout << "  Ctrl+RIGHT button: undo last mouseclick or console color input" << endl;
     cout << "  Ctrl+Shift+RIGHT button: reset inclusion of multiple colors" << endl;
     cout << endl;
 	cout << "Keyboard shortcuts (working only when the image window is the active one):" << endl;
@@ -557,6 +561,7 @@ int main(int argc, char **argv)
 	cout << "  H, S, V - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively" << endl;
 	cout << "  c, C   - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
 	cout << "  r, R   - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
+    cout << "  BackSpace - undo last color or range selection (of mouse clicks or console input)" << endl;
 	cout << endl;
 
 	if (argc > 2)
@@ -603,9 +608,9 @@ int main(int argc, char **argv)
 	// Create a GUI window
 	cv::namedWindow(windowMain);
 	// Allow the user to change the Hue value upto 179, since OpenCV uses Hues upto 180.
-	cv::createTrackbar( "Hue", windowMain, &color.H, HUE_RANGE-1, &hue_trackbarWasChanged );
-	cv::createTrackbar( "Saturation", windowMain, &color.S, 255, &hue_trackbarWasChanged );
-	cv::createTrackbar( "Brightness", windowMain, &color.V, 255, &hue_trackbarWasChanged );
+	cv::createTrackbar( "Hue", windowMain, &color.H, HUE_RANGE-1, &color_trackbarWasChanged);
+	cv::createTrackbar( "Saturation", windowMain, &color.S, 255, &color_trackbarWasChanged);
+	cv::createTrackbar( "Brightness", windowMain, &color.V, 255, &color_trackbarWasChanged);
 	// Allow the user to click on Hue chart to change the hue, or click on the color wheel to see a value.
     cv::setMouseCallback( windowMain, mouseEvent);
 
@@ -632,9 +637,9 @@ int main(int argc, char **argv)
 	cv::namedWindow(windowHSVFilter, CV_WINDOW_NORMAL);
 	cv::resizeWindow(windowHSVFilter,(int)FILTERIMAGEDISPLAYWIDTH,(int)(inputimage.rows*FILTERIMAGEDISPLAYWIDTH/inputimage.cols));
 	// Allow the user to change the Hue filter range value upto 179, since OpenCV uses Hues upto 180.
-	cv::createTrackbar( "rangeH", windowMain, &color.rangeH, HUE_RANGE-1, &filterInputImage );
-	cv::createTrackbar( "rangeS", windowMain, &color.rangeS, 255, &filterInputImage );
-	cv::createTrackbar( "rangeV", windowMain, &color.rangeV, 255, &filterInputImage );
+	cv::createTrackbar( "rangeH", windowMain, &color.rangeH, HUE_RANGE-1, &color_trackbarWasChanged);
+	cv::createTrackbar( "rangeS", windowMain, &color.rangeS, 255, &color_trackbarWasChanged);
+	cv::createTrackbar( "rangeV", windowMain, &color.rangeV, 255, &color_trackbarWasChanged);
 	// Allow the user to click on input image to define basic HSV value
 	cv::setMouseCallback( windowHSVFilter, mouseEvent2);
 
@@ -644,44 +649,46 @@ int main(int argc, char **argv)
 	// wait infinitely until Esc or Ctrl-C is pressed
 	int a,b,c;
 	int i = 0;
-    int lasti=0;
+    int lasti = 0;
     int countdigits = 0;
     char digits[40];
 	while (i != 27 && i != 3 && i != -1) {
 		i = cv::waitKey(0);
-		if (!bInputIsImage) {
-			// f, F
-			if (i == 'f' || i == 'F') {
-				getNewFramesFromVideo(100);
-				cv::setTrackbarPos("frame", windowMain, currentframe);
-			
-			} 
-			// n, N
-			else if (i == 'n' || i == 'N') {
-				getNewFramesFromVideo();
-				cv::setTrackbarPos("frame", windowMain, currentframe);
-			}
-		}
-		// h, H, s, S, v, V
-		if (i == 'h' || i == 'H' || i == 's' || i == 'S' || i == 'v' || i == 'V') {
-			cout << "please enter number for " << (char)i << ":";
-			countdigits = 0;
-            lasti = i;
+        if (!lasti) {
+            if (!bInputIsImage) {
+                // f, F
+                if (i == 'f' || i == 'F') {
+                    getNewFramesFromVideo(100);
+                    cv::setTrackbarPos("frame", windowMain, currentframe);
+
+                }
+                // n, N
+                else if (i == 'n' || i == 'N') {
+                    getNewFramesFromVideo();
+                    cv::setTrackbarPos("frame", windowMain, currentframe);
+                }
+            }
+            // h, H, s, S, v, V
+            if (i == 'h' || i == 'H' || i == 's' || i == 'S' || i == 'v' || i == 'V') {
+                cout << "please enter number for " << (char)i << ": ";
+                countdigits = 0;
+                lasti = i;
+            }
+            // c, C
+            else if (i == 'c' || i == 'C') {
+                cout << "please enter three numbers (and space between) for full HSV color definition: ";
+                countdigits = 0;
+                lasti = 'c';
+            }
+            // r, R
+            else if (i == 'r' || i == 'R') {
+                cout << "please enter three numbers (and space between) for full HSV range definition: ";
+                countdigits = 0;
+                lasti = 'r';
+            }
         }
-		// c, C
-		else if (i == 'c' || i == 'C') {
-			cout << "please enter three numbers (and space between) for full HSV color definition:";
-			countdigits = 0;
-            lasti = 'c';
-        }
-		// r, R
-		else if (i == 'r' || i == 'R') {
-			cout << "please enter three numbers (and space between) for full HSV range definition:";
-			countdigits = 0;
-            lasti = 'r';
-        }
-        // digits and space
-        else if ((i == ' ' || (i >= 48 && i <= 57)) && lasti) {
+        // digits and space (within lasti)
+        else if (i == ' ' || (i >= 48 && i <= 57)) {
             digits[countdigits++] = (char)i;
             if (countdigits >= 40) {
                 lasti = 0;
@@ -691,53 +698,93 @@ int main(int argc, char **argv)
 				cout << (char)i;
 			}
 		}
+
+        // BackSpace
+        if (i == 8) {
+            if (!lasti) {
+                undo();
+            } else if (countdigits) {
+                countdigits--;
+                cout << "\b \b";
+            }
+        }
         // Enter
-        else if (i == 13 && lasti && countdigits) {
-            digits[countdigits] = 0;
-			cout << endl;
-            if (lasti == 'h') {
-                color.H = atoi(digits);
-            	cv::setTrackbarPos("Hue", windowMain, color.H);
-			} else if (lasti == 'H') {
-                color.rangeH = atoi(digits);
-            	cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
-			} else if (lasti == 's') {
-                color.S = atoi(digits);
-            	cv::setTrackbarPos("Saturation", windowMain, color.S);
-			} else if (lasti == 'S') {
-                color.rangeS = atoi(digits);
-            	cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
-			} else if (lasti == 'v') {
-                color.V = atoi(digits);
-            	cv::setTrackbarPos("Brightness", windowMain, color.V);
-			} else if (lasti == 'V') {
-                color.rangeV = atoi(digits);
-            	cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
-			} else if (lasti == 'c') {
-                if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
-            		color.H = a;
-					color.S = b;
-					color.V = c;
-					cv::setTrackbarPos("Hue", windowMain, color.H);
-            		cv::setTrackbarPos("Saturation", windowMain, color.S);
-                    cv::setTrackbarPos("Brightness", windowMain, color.V);
-				}
-			} else if (lasti == 'r') {
-                if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
-            		color.rangeH = a;
-					color.rangeS = b;
-					color.rangeV = c;
+        else if (i == 13) {
+            cout << endl;
+            if (lasti && countdigits) {
+                digits[countdigits] = 0;
+                if (lasti == 'h') {
+                    colorhistory.push_back(color);
+                    avgpixnum = 1;
+                    color.H = atoi(digits);
+                    cv::setTrackbarPos("Hue", windowMain, color.H);
+                }
+                else if (lasti == 'H') {
+                    colorhistory.push_back(color);
+                    avgpixnum = 1;
+                    color.rangeH = atoi(digits);
                     cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
+                }
+                else if (lasti == 's') {
+                    colorhistory.push_back(color);
+                    avgpixnum = 1;
+                    color.S = atoi(digits);
+                    cv::setTrackbarPos("Saturation", windowMain, color.S);
+                }
+                else if (lasti == 'S') {
+                    colorhistory.push_back(color);
+                    avgpixnum = 1;
+                    color.rangeS = atoi(digits);
                     cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
+                }
+                else if (lasti == 'v') {
+                    colorhistory.push_back(color);
+                    avgpixnum = 1;
+                    color.V = atoi(digits);
+                    cv::setTrackbarPos("Brightness", windowMain, color.V);
+                }
+                else if (lasti == 'V') {
+                    colorhistory.push_back(color);
+                    avgpixnum = 1;
+                    color.rangeV = atoi(digits);
                     cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
-				}
-			}
+                }
+                else if (lasti == 'c') {
+                    if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
+                        colorhistory.push_back(color);
+                        avgpixnum = 1;
+                        color.H = a;
+                        color.S = b;
+                        color.V = c;
+                        cv::setTrackbarPos("Hue", windowMain, color.H);
+                        cv::setTrackbarPos("Saturation", windowMain, color.S);
+                        cv::setTrackbarPos("Brightness", windowMain, color.V);
+                    } else {
+                        cout << "invalid value, try again" << endl;
+                    }
+                }
+                else if (lasti == 'r') {
+                    if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
+                        colorhistory.push_back(color);
+                        avgpixnum = 1;
+                        color.rangeH = a;
+                        color.rangeS = b;
+                        color.rangeV = c;
+                        cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
+                        cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
+                        cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
+                    } else {
+                        cout << "invalid value, try again" << endl;
+                    }
+                }
+            }
+            lasti = 0;
+            countdigits = 0;
         }
         // anything else
-        else {
-            lasti = 0;
+        else if (!lasti) {
 			cout << i << " was pressed" << endl;
-		}
+        }
 	}
 
 	cv::destroyAllWindows();
