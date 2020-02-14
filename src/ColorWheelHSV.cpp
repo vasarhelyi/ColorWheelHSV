@@ -87,16 +87,16 @@ bool bInputIsImage = false;
 int iDrawBlobs = 0;
 
 void DrawBlob(cv::Mat &dstImg, cv::Moments& moments) {
-    int radius, centerx, centery;
+    int dia, centerx, centery;
     // draw circles around blobs
-    radius = sqrt(moments.m00 / 3.14159265);
+    dia = sqrt(moments.m00 / 3.14159265) * 2;
     centerx = moments.m10 / moments.m00;
     centery = moments.m01 / moments.m00;
-    cv::circle(dstImg, cv::Point(centerx, centery), radius * 2, cv::Scalar(0, 0, 255), 2);
+    cv::circle(dstImg, cv::Point(centerx, centery), dia, cv::Scalar(0, 0, 255), 2);
     // write out area
     char c[16];
     itoa(moments.m00, c, 10);
-    cv::putText(dstImg, c, cv::Point(centerx + radius * 2 + 5, centery), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
+    cv::putText(dstImg, c, cv::Point(centerx + dia + 5, centery), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
 }
 
 void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor, int iDrawBlobs) {
