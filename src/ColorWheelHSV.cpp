@@ -650,11 +650,13 @@ int main(int argc, char **argv)
 	int a,b,c;
 	int i = 0;
     int lasti = 0;
+    int lastcommand = 0;
     int countdigits = 0;
     char digits[40];
 	while (i != 27 && i != 3 && i != -1) {
-		i = cv::waitKey(0);
-        if (!lasti) {
+        lasti = i;
+        i = cv::waitKey(0);
+        if (!lastcommand) {
             if (!bInputIsImage) {
                 // f, F
                 if (i == 'f' || i == 'F') {
@@ -672,26 +674,26 @@ int main(int argc, char **argv)
             if (i == 'h' || i == 'H' || i == 's' || i == 'S' || i == 'v' || i == 'V') {
                 cout << "please enter number for " << (char)i << ": ";
                 countdigits = 0;
-                lasti = i;
+                lastcommand = i;
             }
             // c, C
             else if (i == 'c' || i == 'C') {
                 cout << "please enter three numbers (and space between) for full HSV color definition: ";
                 countdigits = 0;
-                lasti = 'c';
+                lastcommand = 'c';
             }
             // r, R
             else if (i == 'r' || i == 'R') {
                 cout << "please enter three numbers (and space between) for full HSV range definition: ";
                 countdigits = 0;
-                lasti = 'r';
+                lastcommand = 'r';
             }
         }
-        // digits and space (within lasti)
+        // digits and space (within lastcommand)
         else if (i == ' ' || (i >= 48 && i <= 57)) {
             digits[countdigits++] = (char)i;
             if (countdigits >= 40) {
-                lasti = 0;
+                lastcommand = 0;
 				cout << endl;
 			}
 			else {
@@ -701,7 +703,7 @@ int main(int argc, char **argv)
 
         // BackSpace
         if (i == 8) {
-            if (!lasti) {
+            if (!lastcommand) {
                 undo();
             } else if (countdigits) {
                 countdigits--;
@@ -711,45 +713,45 @@ int main(int argc, char **argv)
         // Enter
         else if (i == 13) {
             cout << endl;
-            if (lasti && countdigits) {
+            if (lastcommand && countdigits) {
                 digits[countdigits] = 0;
-                if (lasti == 'h') {
+                if (lastcommand == 'h') {
                     colorhistory.push_back(color);
                     avgpixnum = 1;
                     color.H = atoi(digits);
                     cv::setTrackbarPos("Hue", windowMain, color.H);
                 }
-                else if (lasti == 'H') {
+                else if (lastcommand == 'H') {
                     colorhistory.push_back(color);
                     avgpixnum = 1;
                     color.rangeH = atoi(digits);
                     cv::setTrackbarPos("rangeH", windowMain, color.rangeH);
                 }
-                else if (lasti == 's') {
+                else if (lastcommand == 's') {
                     colorhistory.push_back(color);
                     avgpixnum = 1;
                     color.S = atoi(digits);
                     cv::setTrackbarPos("Saturation", windowMain, color.S);
                 }
-                else if (lasti == 'S') {
+                else if (lastcommand == 'S') {
                     colorhistory.push_back(color);
                     avgpixnum = 1;
                     color.rangeS = atoi(digits);
                     cv::setTrackbarPos("rangeS", windowMain, color.rangeS);
                 }
-                else if (lasti == 'v') {
+                else if (lastcommand == 'v') {
                     colorhistory.push_back(color);
                     avgpixnum = 1;
                     color.V = atoi(digits);
                     cv::setTrackbarPos("Brightness", windowMain, color.V);
                 }
-                else if (lasti == 'V') {
+                else if (lastcommand == 'V') {
                     colorhistory.push_back(color);
                     avgpixnum = 1;
                     color.rangeV = atoi(digits);
                     cv::setTrackbarPos("rangeV", windowMain, color.rangeV);
                 }
-                else if (lasti == 'c') {
+                else if (lastcommand == 'c') {
                     if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
                         colorhistory.push_back(color);
                         avgpixnum = 1;
@@ -763,7 +765,7 @@ int main(int argc, char **argv)
                         cout << "invalid value, try again" << endl;
                     }
                 }
-                else if (lasti == 'r') {
+                else if (lastcommand == 'r') {
                     if (sscanf(digits, "%d %d %d", &a, &b, &c) == 3) {
                         colorhistory.push_back(color);
                         avgpixnum = 1;
@@ -778,12 +780,14 @@ int main(int argc, char **argv)
                     }
                 }
             }
-            lasti = 0;
+            lastcommand = 0;
             countdigits = 0;
         }
         // anything else
-        else if (!lasti) {
-			cout << i << " was pressed" << endl;
+        else if (!lastcommand) {
+            if (i != lasti) {
+                cout << "last pressed key: " << i << endl;
+            }
         }
 	}
 
