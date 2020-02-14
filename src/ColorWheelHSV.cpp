@@ -84,6 +84,32 @@ const double FILTERIMAGEDISPLAYWIDTH = 500; // display width
 cv::Mat inputimage; // original image
 cv::VideoCapture inputvideo; // video
 bool bInputIsImage = false;
+bool bDrawBlobs = false;
+
+void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor) {
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::Moments moments;
+    unsigned int j = 0;
+    int radius, centerx, centery;
+
+    // find blob contours
+    cv::findContours(srcBin, contours, hierarchy, CV_RETR_EXTERNAL,
+        CV_CHAIN_APPROX_NONE, cv::Point(0, 0));
+
+    // Iterate over blobs
+    for (j = 0; j < contours.size(); j++) {
+        // Compute the moments
+        moments = cv::moments(contours[j]);
+        radius = sqrt(moments.m00 / 3.14159265);
+        centerx = moments.m10 / moments.m00;
+        centery = moments.m01 / moments.m00;
+        cv::circle(dstImg, cv::Point(centerx, centery), radius * 2, cv::Scalar(0, 0, 255), 2);
+        char c[16];
+        itoa(moments.m00, c, 10);
+        cv::putText(dstImg, c, cv::Point(centerx + radius * 2 + 5, centery), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
+    }
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,7 +165,11 @@ void displayFilteredImage() {
     cv::merge(images, outputimage);
 	// or with input
 	cv::bitwise_or(inputimage, outputimage, outputimage);
-	// show it
+	// draw blobs on it
+    if (bDrawBlobs) {
+        DrawBlobs(filterimage, outputimage, &color);
+    }
+    // show it
 	cv::imshow(windowHSVFilter, outputimage);
 }
 
@@ -555,12 +585,13 @@ int main(int argc, char **argv)
     cout << "  Ctrl+Shift+RIGHT button: reset inclusion of multiple colors" << endl;
     cout << endl;
 	cout << "Keyboard shortcuts (working only when the image window is the active one):" << endl;
-	cout << "  n, N - next frame" << endl;
-	cout << "  f, F - 100 frame forward" << endl;
+	cout << "  n/N     - next frame" << endl;
+	cout << "  f/F     - 100 frame forward" << endl;
 	cout << "  h, s, v - start writing a number in the console, on Enter it will update color.H, .S, .V, respectively" << endl;
 	cout << "  H, S, V - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively" << endl;
-	cout << "  c, C   - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
-	cout << "  r, R   - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
+	cout << "  c/C     - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
+	cout << "  r/R     - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
+    cout << "  d/D     - draw or not draw red circles around blobs showing their area" << endl;
     cout << "  BackSpace - undo last color or range selection (of mouse clicks or console input)" << endl;
 	cout << endl;
 
@@ -782,7 +813,13 @@ int main(int argc, char **argv)
             }
             lastcommand = 0;
             countdigits = 0;
+        } 
+        // draw blobs or not to draw blobs
+        else if (i == 'd' || i == 'D') {
+            bDrawBlobs = !bDrawBlobs;
+            displayFilteredImage();
         }
+        
         // anything else
         else if (!lastcommand) {
             if (i != lasti) {
