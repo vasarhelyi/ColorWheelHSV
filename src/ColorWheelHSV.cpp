@@ -84,14 +84,32 @@ const double FILTERIMAGEDISPLAYWIDTH = 500; // display width
 cv::Mat inputimage; // original image
 cv::VideoCapture inputvideo; // video
 bool bInputIsImage = false;
-bool bDrawBlobs = false;
+int iDrawBlobs = 0;
 
-void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor) {
+void DrawBlob(cv::Mat &dstImg, cv::Moments& moments) {
+    int radius, centerx, centery;
+    // draw circles around blobs
+    radius = sqrt(moments.m00 / 3.14159265);
+    centerx = moments.m10 / moments.m00;
+    centery = moments.m01 / moments.m00;
+    cv::circle(dstImg, cv::Point(centerx, centery), radius * 2, cv::Scalar(0, 0, 255), 2);
+    // write out area
+    char c[16];
+    itoa(moments.m00, c, 10);
+    cv::putText(dstImg, c, cv::Point(centerx + radius * 2 + 5, centery), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
+}
+
+void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor, int iDrawBlobs) {
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
-    cv::Moments moments;
+    cv::Moments moments, largestmoments;
     unsigned int j = 0;
-    int radius, centerx, centery;
+    double maxarea = 0;
+
+    // do not draw anything on 0
+    if (iDrawBlobs == 0) {
+        return;
+    }
 
     // find blob contours
     cv::findContours(srcBin, contours, hierarchy, CV_RETR_EXTERNAL,
@@ -101,15 +119,18 @@ void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor) {
     for (j = 0; j < contours.size(); j++) {
         // Compute the moments
         moments = cv::moments(contours[j]);
-        // draw circles around blobs
-        radius = sqrt(moments.m00 / 3.14159265);
-        centerx = moments.m10 / moments.m00;
-        centery = moments.m01 / moments.m00;
-        cv::circle(dstImg, cv::Point(centerx, centery), radius * 2, cv::Scalar(0, 0, 255), 2);
-        // write out area
-        char c[16];
-        itoa(moments.m00, c, 10);
-        cv::putText(dstImg, c, cv::Point(centerx + radius * 2 + 5, centery), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
+        // draw all on 2
+        if (iDrawBlobs == 2) {
+            DrawBlob(dstImg, moments);
+        }
+        else if (iDrawBlobs == 1 && moments.m00 > maxarea) {
+            maxarea = moments.m00;
+            largestmoments = moments;
+        }
+    }
+
+    if (maxarea > 0) {
+        DrawBlob(dstImg, largestmoments);
     }
 }
 
@@ -168,9 +189,7 @@ void displayFilteredImage() {
 	// or with input
 	cv::bitwise_or(inputimage, outputimage, outputimage);
 	// draw blobs on it
-    if (bDrawBlobs) {
-        DrawBlobs(filterimage, outputimage, &color);
-    }
+    DrawBlobs(filterimage, outputimage, &color, iDrawBlobs);
     // show it
 	cv::imshow(windowHSVFilter, outputimage);
 }
@@ -593,7 +612,7 @@ int main(int argc, char **argv)
 	cout << "  H, S, V - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively" << endl;
 	cout << "  c/C     - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
 	cout << "  r/R     - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
-    cout << "  d/D     - draw or not draw red circles around blobs and text showing their area" << endl;
+    cout << "  d/D     - draw red circles and area text around none/largest/all blobs" << endl;
     cout << "  BackSpace - undo last color or range selection (of mouse clicks or console input)" << endl;
 	cout << endl;
 
@@ -818,7 +837,7 @@ int main(int argc, char **argv)
         } 
         // draw blobs or not to draw blobs
         else if (i == 'd' || i == 'D') {
-            bDrawBlobs = !bDrawBlobs;
+            iDrawBlobs = (iDrawBlobs + 1) % 3;
             displayFilteredImage();
         }
         
