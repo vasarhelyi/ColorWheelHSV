@@ -5,12 +5,11 @@
 // This version of the software is substantially rewritten by Gabor Vasarhelyi (vasarhelyi@hal.elte.hu).
 
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-//#include <stdio.h>
-//#include <tchar.h>
 
 #include <cstdio>	// Used for "printf"
 #include <string>	// Used for C++ strings
 #include <iostream>	// Used for C++ cout print statements
+#include <cstdlib>  // Used for itoa()
 //#include <cmath>	// Used to calculate square-root for statistics
 
 // Include OpenCV libraries
