@@ -9,8 +9,7 @@
 #include <cstdio>	// Used for "printf"
 #include <string>	// Used for C++ strings
 #include <iostream>	// Used for C++ cout print statements
-#include <cstdlib>  // Used for itoa()
-//#include <cmath>	// Used to calculate square-root for statistics
+#include <cmath>	// Used to calculate square-root for statistics
 
 // Include OpenCV libraries
 #include <opencv2/opencv.hpp>
@@ -93,8 +92,8 @@ void DrawBlob(cv::Mat &dstImg, cv::Moments& moments) {
     centery = moments.m01 / moments.m00;
     cv::circle(dstImg, cv::Point(centerx, centery), dia, cv::Scalar(0, 0, 255), 2);
     // write out area
-    char c[16];
-    itoa(moments.m00, c, 10);
+    char c[32];
+    snprintf(c, 32, "A:%d, D:%d", int(moments.m00), dia);
     cv::putText(dstImg, c, cv::Point(centerx + dia + 5, centery), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
 }
 
