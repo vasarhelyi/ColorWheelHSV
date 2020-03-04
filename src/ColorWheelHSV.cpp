@@ -705,7 +705,7 @@ int main(int argc, char **argv)
     char digits[40];
 	while (i != 27 && i != 3 && i != -1) {
         lasti = i;
-        i = cv::waitKey(0);
+        i = (cv::waitKey(0) & 255);
         if (!lastcommand) {
             if (!bInputIsImage) {
                 // f, F
