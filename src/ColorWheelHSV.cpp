@@ -610,7 +610,7 @@ int main(int argc, char **argv)
 	cout << "  H, S, V - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively" << endl;
 	cout << "  c/C     - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
 	cout << "  r/R     - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
-    cout << "  d/D     - draw red circles and area text around none/largest/all blobs" << endl;
+    cout << "  d/D     - draw red circles and show area/diameter around none/largest/all blobs" << endl;
     cout << "  BackSpace - undo last color or range selection (of mouse clicks or console input)" << endl;
 	cout << endl;
 
