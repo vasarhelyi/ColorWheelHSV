@@ -84,6 +84,8 @@ cv::VideoCapture inputvideo; // video
 bool bInputIsImage = false;
 int iDrawBlobs = 0;
 
+int iHighlightChannel = 3; // 0 = blue, 1 = green, 2 = red, 3 = white
+
 void DrawBlob(cv::Mat &dstImg, cv::Moments& moments) {
     int dia, centerx, centery;
     // draw circles around blobs
@@ -178,14 +180,26 @@ void displayFilteredImage() {
 	// filter it
     cvFilterHSV(filterimage, outputimage);
 
-	// convert binary to RGB
+    // convert binary to RGB
     std::vector<cv::Mat> images(3);
-    images.at(0) = filterimage;
-    images.at(1) = filterimage;
-    images.at(2) = filterimage;
-    cv::merge(images, outputimage);
-	// or with input
-	cv::bitwise_or(inputimage, outputimage, outputimage);
+
+    // white
+    if (iHighlightChannel > 2) {
+        images.at(0) = filterimage;
+        images.at(1) = filterimage;
+        images.at(2) = filterimage;
+        cv::merge(images, outputimage);
+        cv::bitwise_or(inputimage, outputimage, outputimage);
+    } 
+    // blue, green, red
+    else {
+        cv::split(inputimage, images);
+        cv::bitwise_or(images.at(iHighlightChannel), filterimage, images.at(iHighlightChannel));
+        cv::bitwise_and(images.at((iHighlightChannel + 1) % 3), 255 - filterimage, images.at((iHighlightChannel + 1) % 3));
+        cv::bitwise_and(images.at((iHighlightChannel + 2) % 3), 255 - filterimage, images.at((iHighlightChannel + 2) % 3));
+        cv::merge(images, outputimage);
+    }
+	
 	// draw blobs on it
     DrawBlobs(filterimage, outputimage, &color, iDrawBlobs);
     // show it
@@ -611,6 +625,7 @@ int main(int argc, char **argv)
 	cout << "  c/C     - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V" << endl;
 	cout << "  r/R     - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV" << endl;
     cout << "  d/D     - draw red circles and show area/diameter around none/largest/all blobs" << endl;
+    cout << "  x/X     - change highlight color (blue, green, red, white)" << endl;
     cout << "  BackSpace - undo last color or range selection (of mouse clicks or console input)" << endl;
 	cout << endl;
 
@@ -836,6 +851,11 @@ int main(int argc, char **argv)
         // draw blobs or not to draw blobs
         else if (i == 'd' || i == 'D') {
             iDrawBlobs = (iDrawBlobs + 1) % 3;
+            displayFilteredImage();
+        }
+        // change highlight color
+        else if (i == 'x' || i == 'X') {
+            iHighlightChannel = (iHighlightChannel + 1) % 4;
             displayFilteredImage();
         }
         
