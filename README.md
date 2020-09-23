@@ -14,14 +14,17 @@ Code tested on linux and Windows.
 
 ## prerequisites
 
-* The code relies on OpenCv 2.x, you should install that first (yes, I know, it is old, I will upgrade only if you really need it).
-Hint: [this github gist](https://gist.github.com/arthurbeggs/06df46af94af7f261513934e56103b30) seems to be a smooth way to go (on linux).
+* The code relies on OpenCv 2.x/3.x, you should install that first (yes, I know, it is old, I will upgrade only if you really need it).
+  I tested it with versions 2.4.13 and 3.2.0 and both work fine.
 
 * Using [CUDA](https://developer.nvidia.com/cuda-zone) is also recommended for speedup.
 
 ## linux
 
 On linux, run `./bootstrap.sh` which creates `build`, in which you can `make`.
+
+If you want to experiment with different OpenCV versions, change the explicitely
+given version in `CMakeLists.txt` in the line `find_package( OpenCV ... REQUIRED )`.
 
 ## windows
 
