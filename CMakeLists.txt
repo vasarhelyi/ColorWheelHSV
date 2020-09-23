@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -fno-omit-frame-pointer -funwind-tables")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-DON_LINUX -D__STDC_CONSTANT_MACROS)
 
-find_package( OpenCV REQUIRED )
+find_package( OpenCV 2.4 REQUIRED )
 find_package(CUDA)
 
 add_executable( colorWheelHSV  src/ColorWheelHSV.cpp )
