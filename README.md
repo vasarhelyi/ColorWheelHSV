@@ -5,7 +5,7 @@ HSVFiltering part added by Gabor Vasarhelyi (vasarhelyi@hal.elte.hu), since Jan 
 
 Current version: 1.1.1 Build 71
 
-This code lets you select colors and color ranges in HSV color space for colored blob detection.
+This code lets you select HSV colors and color ranges (radius around base color in HSV color space) for colored blob detection.
 
 
 # install
@@ -41,12 +41,17 @@ Click on the top Hue map, or the bottom Color graph to change values.
 
 * **LEFT** button: change values to 3x3 neighbor average color. Do not change range.
 * **Shift+LEFT** button: Average colors. Do not change range.
-* **RIGHT** button: include this pixel to new range as tight as possible.
-* **Ctrl+RIGHT** button: undo last mouseclick.
 * **Ctrl+LEFT** button: save current color and range and draw it on the palette.
 * **Ctrl+Shift+LEFT** button: clear all saved colors+ranges.
 
+* **RIGHT** button: include this pixel to new range as tight as possible.
+* **Shift+RIGHT** button: undo last mouseclick or console color input
+* **Ctrl+RIGHT** button: undo last mouseclick or console color input
+* **Ctrl+Shift+RIGHT** button: reset inclusion of multiple colors
+
 ## keyboard shortcuts
+
+Note: these work only when the image window is the active one.
 
 * **nN** - next frame
 * **fF** - 100 frame forward
@@ -54,4 +59,7 @@ Click on the top Hue map, or the bottom Color graph to change values.
 * **H,S,V** - start writing a number in the console, on Enter it will update color.rangeH, .rangeS, .rangeV, respectively
 * **c,C**   - start writing three numbers in the console with space between, on Enter it will update all color.H, .S, .V
 * **r,R**   - start writing three numbers in the console with space between, on Enter it will update all color.rangeH, .rangeS, .rangeV
+* **d/D**   - draw red circles and show area/diameter around none/largest/all blobs
+* **x/X**   - change highlight color (blue, green, red, white)
+* **BackSpace** - undo last color or range selection (of mouse clicks or console input)
 
