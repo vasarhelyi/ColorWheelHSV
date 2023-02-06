@@ -737,7 +737,7 @@ int main(int argc, char **argv)
             }
             // h, H, s, S, v, V
             if (i == 'h' || i == 'H' || i == 's' || i == 'S' || i == 'v' || i == 'V') {
-                cout << "please enter number for " << (char)i << ": ";
+                cout << "please enter number for " << (char)i << ": " << endl;
                 countdigits = 0;
                 lastcommand = i;
             }
@@ -755,7 +755,10 @@ int main(int argc, char **argv)
             }
         }
         // digits and space (within lastcommand)
-        else if (i == ' ' || (i >= 48 && i <= 57)) {
+        else if (i == ' ' || (i >= 48 && i <= 57) || (i >= 176 && i <= 185)) {
+	    if (i >= 176 && i <= 185) {
+		    i = i - 128
+	    }
             digits[countdigits++] = (char)i;
             if (countdigits >= 40) {
                 lastcommand = 0;
@@ -776,7 +779,7 @@ int main(int argc, char **argv)
             }
         }
         // Enter
-        else if (i == 13) {
+        else if (i == 13 || i == 141) {
             cout << endl;
             if (lastcommand && countdigits) {
                 digits[countdigits] = 0;
