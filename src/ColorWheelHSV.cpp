@@ -89,14 +89,14 @@ int iHighlightChannel = 3; // 0 = blue, 1 = green, 2 = red, 3 = white
 void DrawBlob(cv::Mat &dstImg, cv::Moments& moments) {
     int dia, centerx, centery;
     // draw circles around blobs
-    dia = sqrt(moments.m00 / 3.14159265) * 2;
-    centerx = moments.m10 / moments.m00;
-    centery = moments.m01 / moments.m00;
+    dia = (int)(sqrt(moments.m00 / 3.14159265) * 2);
+    centerx = (int)(moments.m10 / moments.m00);
+    centery = (int)(moments.m01 / moments.m00);
     cv::circle(dstImg, cv::Point(centerx, centery), dia, cv::Scalar(0, 0, 255), 2);
     // write out area
     char c[32];
     snprintf(c, 32, "A:%d, D:%d", int(moments.m00), dia);
-    cv::putText(dstImg, c, cv::Point(centerx + dia + 5, centery), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
+    cv::putText(dstImg, c, cv::Point(centerx + dia + 5, centery), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
 }
 
 void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor, int iDrawBlobs) {
@@ -112,8 +112,8 @@ void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor, int iDrawBlobs)
     }
 
     // find blob contours
-    cv::findContours(srcBin, contours, hierarchy, CV_RETR_EXTERNAL,
-        CV_CHAIN_APPROX_NONE, cv::Point(0, 0));
+    cv::findContours(srcBin, contours, hierarchy, cv::RETR_EXTERNAL,
+        cv::CHAIN_APPROX_NONE, cv::Point(0, 0));
 
     // Iterate over blobs
     for (j = 0; j < contours.size(); j++) {
@@ -139,7 +139,7 @@ void DrawBlobs(cv::Mat &srcBin, cv::Mat &dstImg, cColor* mColor, int iDrawBlobs)
 // source: http://www.shervinemami.info/blobs.html
 // input file type must be HSV 8-bit
 // output file type must be same size, binary 8-bit
-void cvFilterHSV(cv::Mat &dstBin, cv::Mat &srcHSV) {		
+void cvFilterHSV(cv::Mat &dstBin, cv::Mat &srcHSV) {
 	int Hmin,Hmax,Smin,Smax,Vmin,Vmax,x;
 
 	// Hue: 0-180, circular continuous
@@ -158,12 +158,12 @@ void cvFilterHSV(cv::Mat &dstBin, cv::Mat &srcHSV) {
 	Vmin = Vmax = color.V;
 	x = color.rangeV;
 	Vmax += x; if (Vmax>255) Vmax = 255;
-	Vmin -= x; if (Vmin<0) Vmin = 0; 
+	Vmin -= x; if (Vmin<0) Vmin = 0;
 
 	// threshold H plane
-	if (Hmax >= Hmin) 
+	if (Hmax >= Hmin)
 		cv::inRange(srcHSV, cv::Scalar(Hmin,Smin,Vmin), cv::Scalar(Hmax,Smax,Vmax), dstBin);
-	else 
+	else
 	{
         cv::Mat tmp;
 		cv::inRange(srcHSV, cv::Scalar(Hmin,Smin,Vmin), cv::Scalar(255,Smax,Vmax), dstBin);
@@ -176,7 +176,7 @@ void displayFilteredImage() {
 	// create copy image
     cv::Mat filterimage, outputimage;
 	// covert to HSV
-	cv::cvtColor(inputimage, outputimage, CV_BGR2HSV);
+	cv::cvtColor(inputimage, outputimage, cv::COLOR_BGR2HSV);
 	// filter it
     cvFilterHSV(filterimage, outputimage);
 
@@ -190,7 +190,7 @@ void displayFilteredImage() {
         images.at(2) = filterimage;
         cv::merge(images, outputimage);
         cv::bitwise_or(inputimage, outputimage, outputimage);
-    } 
+    }
     // blue, green, red
     else {
         cv::split(inputimage, images);
@@ -199,7 +199,7 @@ void displayFilteredImage() {
         cv::bitwise_and(images.at((iHighlightChannel + 2) % 3), 255 - filterimage, images.at((iHighlightChannel + 2) % 3));
         cv::merge(images, outputimage);
     }
-	
+
 	// draw blobs on it
     DrawBlobs(filterimage, outputimage, &color, iDrawBlobs);
     // show it
@@ -212,7 +212,7 @@ int getNewFramesFromVideo(int n=1) {
 	while (i<n) {
 		if (framecount && currentframe && currentframe >= framecount) break;
         inputvideo.read(tempimage);
-		if (tempimage.empty()) 
+		if (tempimage.empty())
 		{
 			cout << "error reading new frame from video!" << endl;
 			return i;
@@ -241,7 +241,7 @@ void getImageFromVideo(int pos, void *userdata) { // used by cvCreateTrackbar
 void displayColorWheelHSV(void) {
 	static cColor oldcolor;
 	cv::Mat imageHSV(cv::Size(WIDTH, HEIGHT), CV_8UC3);
-	int rowSize = imageHSV.step;	// Size of row in bytes, including extra padding
+	int rowSize = (int)imageHSV.step;	// Size of row in bytes, including extra padding
 	unsigned char *imOfs = imageHSV.data;	// Pointer to the start of the image HSV pixels.
 
 	// Clear the image to grey (Saturation=0)
@@ -311,14 +311,14 @@ void displayColorWheelHSV(void) {
 
 	// Convert the HSV image to RGB (BGR) for displaying
 	cv::Mat imageRGB(cv::Size(imageHSV.cols, imageHSV.rows), CV_8UC3);
-	cv::cvtColor(imageHSV, imageRGB, CV_HSV2BGR);	// (note that OpenCV stores RGB images in B,G,R order.
+	cv::cvtColor(imageHSV, imageRGB, cv::COLOR_HSV2BGR);	// (note that OpenCV stores RGB images in B,G,R order.
 
 	// Display the RGB image
 	cv::imshow(windowMain, imageRGB);
 
 	// write text to output
 	if (oldcolor != color) {
-		cout	<< "HSV: " << color.H << " " << color.S << " " << color.V 
+		cout	<< "HSV: " << color.H << " " << color.S << " " << color.V
 				<< " rangeHSV: " << color.rangeH << " " << color.rangeS << " " << color.rangeV << endl;
 		oldcolor = color;
 	}
@@ -347,7 +347,7 @@ void undo(bool bUpdateGUI=true) {
     if (avgcolornum) {
         avgcolornum--;
     }
-    
+
     if (bUpdateGUI) {
         // update the GUI Trackbars
         cv::setTrackbarPos("Hue", windowMain, color.H);
@@ -362,7 +362,7 @@ void undo(bool bUpdateGUI=true) {
 // This function is automatically called whenever the user clicks the mouse in the window.
 static void mouseEvent( int ievent, int x, int y, int flags, void* param ) {
 	// Check if they clicked or dragged a mouse button or not.
-	if (flags & CV_EVENT_FLAG_LBUTTON) {
+	if (flags & cv::EVENT_FLAG_LBUTTON) {
 		colorhistory.push_back(color); // save old color
 		mouseX = x;
 		mouseY = y;
@@ -394,17 +394,17 @@ static void mouseEvent( int ievent, int x, int y, int flags, void* param ) {
 // This function is automatically called whenever the user clicks the mouse in the HSV filter window.
 void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 	// left mouse click
-	if (flags & CV_EVENT_FLAG_LBUTTON) {
+	if (flags & cv::EVENT_FLAG_LBUTTON) {
 		// Ctrl+left button click: save color, Ctrl+Shift+left: clear all colors
-		if (flags & CV_EVENT_FLAG_CTRLKEY)
+		if (flags & cv::EVENT_FLAG_CTRLKEY)
 		{
-			if (flags & CV_EVENT_FLAG_SHIFTKEY) colorvec.clear(); // clear all saved colors
+			if (flags & cv::EVENT_FLAG_SHIFTKEY) colorvec.clear(); // clear all saved colors
 			else colorvec.push_back(color); // save current color
 			// update the color windows
 			displayColorWheelHSV();
 		}
 		// Shift+left button click: average colors
-		else if (flags & CV_EVENT_FLAG_SHIFTKEY) {
+		else if (flags & cv::EVENT_FLAG_SHIFTKEY) {
             colorhistory.push_back(color); // save old color
 			cv::Vec3d pixel;
 			int i,j;
@@ -414,8 +414,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 			if (!y) { y++; } if (y == inputimage.rows) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
 			for (i=-n;i<=n;i++)
-			{ 
-				for (j=-n;j<=n;j++) 
+			{
+				for (j=-n;j<=n;j++)
 				{
 					pixel.val[0] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[0];
 					pixel.val[1] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[1];
@@ -428,9 +428,9 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 			//Cv::Scalar pixel = cvGet2D(inputimage,x,y); // bugbugbug this does not work somehow... BUT why???
 			cv::Mat tmp(cv::Size(1,1), CV_8UC3);
             tmp.at<cv::Vec3b>(0, 0) = pixel;
-			cv::cvtColor(tmp, tmp, CV_BGR2HSV);
+			cv::cvtColor(tmp, tmp, cv::COLOR_BGR2HSV);
             pixel = tmp.at<cv::Vec3b>(0, 0);
-			// set new average color				
+			// set new average color
 			color.H = (color.H * avgcolornum + (int)pixel.val[0]) / (avgcolornum + 1);
 			color.S = (color.S * avgcolornum + (int)pixel.val[1]) / (avgcolornum + 1);
 			color.V = (color.V * avgcolornum + (int)pixel.val[2]) / (avgcolornum + 1);
@@ -455,10 +455,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 			if (!x) { x++; } if (x == inputimage.cols) { x--; }
 			if (!y) { y++; } if (y == inputimage.rows) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
-			for (i=-n;i<=n;i++)
-			{ 
-				for (j=-n;j<=n;j++) 
-				{
+			for (i=-n;i<=n;i++) {
+				for (j=-n;j<=n;j++) {
 					pixel.val[0] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[0];
 					pixel.val[1] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[1];
 					pixel.val[2] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[2];
@@ -469,7 +467,7 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 			// get pixel color in HSV format
 			cv::Mat tmp(cv::Size(1,1), CV_8UC3);
             tmp.at<cv::Vec3b>(0, 0) = pixel;
-			cv::cvtColor(tmp, tmp, CV_BGR2HSV);
+			cv::cvtColor(tmp, tmp, cv::COLOR_BGR2HSV);
             pixel = tmp.at<cv::Vec3b>(0, 0);
 			// store new value
 			color.H = (int)pixel.val[0];
@@ -482,9 +480,9 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 		}
 	}
 	// right button
-    else if (flags & CV_EVENT_FLAG_RBUTTON) {
+    else if (flags & cv::EVENT_FLAG_RBUTTON) {
         // Ctrl+right or Shift+right button click: restore last color / undo
-        if (((flags & CV_EVENT_FLAG_CTRLKEY) > 0) != ((flags & CV_EVENT_FLAG_SHIFTKEY) > 0)) {
+        if (((flags & cv::EVENT_FLAG_CTRLKEY) > 0) != ((flags & cv::EVENT_FLAG_SHIFTKEY) > 0)) {
             undo(false);
         }
 		// right button: adjust range exactly to fit all that are pointed
@@ -497,10 +495,8 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 			if (!x) { x++; } if (x == inputimage.cols) { x--; }
 			if (!y) { y++; } if (y == inputimage.rows) { y--; }
 			for (i=0;i<3;i++) pixel.val[i] = 0;
-			for (i=-n;i<=n;i++)
-			{ 
-				for (j=-n;j<=n;j++) 
-				{
+			for (i=-n;i<=n;i++) {
+				for (j=-n;j<=n;j++) {
 					pixel.val[0] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[0];
 					pixel.val[1] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[1];
 					pixel.val[2] += inputimage.at<cv::Vec3b>(cv::Point(x + i, y + j))[2];
@@ -512,10 +508,10 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 			//CvScalar pixel = cvGet2D(inputimage,x,y); // bugbugbug this does not work somehow... BUT why???
 			cv::Mat tmp(cv::Size(1,1),CV_8UC3);
             tmp.at<cv::Vec3b>(0, 0) = pixel;
-			cv::cvtColor(tmp,tmp,CV_BGR2HSV);
+			cv::cvtColor(tmp,tmp,cv::COLOR_BGR2HSV);
             pixel = tmp.at<cv::Vec3b>(0, 0);
 			// if Ctrl+Shift+right button is pressed, reset tight inclusion
-            if ((flags & CV_EVENT_FLAG_CTRLKEY) && (flags & CV_EVENT_FLAG_SHIFTKEY)) {
+            if ((flags & cv::EVENT_FLAG_CTRLKEY) && (flags & cv::EVENT_FLAG_SHIFTKEY)) {
                 avgpixnum = 0;
                 avgcolornum = 0;
                 cout << " averaging and multi-color inclusion is reset" << endl;
@@ -542,24 +538,22 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 					// i,j: distance from Hmax,Hmin
 					i = ((int)pixel.val[0]+180-Hmax)%180;
 					j = (Hmin+180-(int)pixel.val[0])%180;
-				
+
 					if (i<=j) Hmax = (int)pixel.val[0]; // closer to Hmax
 					else Hmin = (int)pixel.val[0]; // closer to Hmin
 					color.rangeH = (int)ceil((double)((Hmax+180-Hmin)%180)/2);
 					color.H = (Hmin + color.rangeH)%180;
 				}
-			
+
 				////////////////// SAT ///////////////////
 				// maxS
-				if (pixel.val[1]>color.S+color.rangeS)
-				{
+				if (pixel.val[1]>color.S+color.rangeS) {
 					i = max(0,color.S-color.rangeS);
 					color.rangeS = (int)ceil((pixel.val[1]-i)/2);
 					color.S = i + color.rangeS;
 				}
 				// minS
-				else if (pixel.val[1]<color.S-color.rangeS)
-				{
+				else if (pixel.val[1]<color.S-color.rangeS) {
 					i = min(255,color.S+color.rangeS);
 					color.rangeS = (int)ceil((-pixel.val[1]+i)/2);
 					color.S = (int)pixel.val[1] + color.rangeS;
@@ -567,15 +561,13 @@ void mouseEvent2( int ievent, int x, int y, int flags, void* param ) {
 
 				////////////////// VAL ///////////////////
 				// maxV
-				if (pixel.val[2]>color.V+color.rangeV)
-				{
+				if (pixel.val[2]>color.V+color.rangeV) {
 					i = max(0,color.V-color.rangeV);
 					color.rangeV = (int)ceil((pixel.val[2]-i)/2);
 					color.V = i + color.rangeV;
 				}
 				// minV
-				else if (pixel.val[2]<color.V-color.rangeV)
-				{
+				else if (pixel.val[2]<color.V-color.rangeV) {
 					i = min(255,color.V+color.rangeV);
 					color.rangeV = (int)ceil((-pixel.val[2]+i)/2);
 					color.V = (int)pixel.val[2] + color.rangeV;
@@ -629,24 +621,18 @@ int main(int argc, char **argv)
     cout << "  BackSpace - undo last color or range selection (of mouse clicks or console input)" << endl;
 	cout << endl;
 
-	if (argc > 2)
-	{
+	if (argc > 2) {
 		cout << "Please pvovide max 1 arg as input file name!" << endl;
 		return -1;
-	}
-	else if (argc == 2)
-	{
+	} else if (argc == 2) {
 		strncpy(inputfile, argv[1], sizeof(inputfile));
-	}
-	else if (argc < 2)
-	{
+	} else if (argc < 2) {
 		cout << "Enter input file: ";
 		cin >> inputfile;
 	}
 	cout << endl << "opening file " << inputfile << endl;
 	// init input image
-	if (!inputvideo.open(inputfile))
-	{
+	if (!inputvideo.open(inputfile)) {
 		cout << "error opening input video file, trying as image..." << endl;
 		inputimage = cv::imread(inputfile);
 		if (inputimage.empty()) {
@@ -682,7 +668,7 @@ int main(int argc, char **argv)
 	// TODO bug: sometimes first readout returns 0 in Win32. Why?
 	// TODO bug: rat stream is buggy, framecount can be invalid
 	if (!bInputIsImage) {
-		framecount = (int)inputvideo.get(CV_CAP_PROP_FRAME_COUNT);
+		framecount = (int)inputvideo.get(cv::CAP_PROP_FRAME_COUNT);
 	} else {
 		framecount = 1;
 	}
@@ -699,7 +685,7 @@ int main(int argc, char **argv)
 	//cvCreateButton("frame",getImageFromVideo,NULL,CV_PUSH_BUTTON,0);
 
 	// init HSV filter part
-	cv::namedWindow(windowHSVFilter, CV_WINDOW_NORMAL);
+	cv::namedWindow(windowHSVFilter, cv::WINDOW_NORMAL);
 	cv::resizeWindow(windowHSVFilter,(int)FILTERIMAGEDISPLAYWIDTH,(int)(inputimage.rows*FILTERIMAGEDISPLAYWIDTH/inputimage.cols));
 	// Allow the user to change the Hue filter range value upto 179, since OpenCV uses Hues upto 180.
 	cv::createTrackbar( "rangeH", windowMain, &color.rangeH, HUE_RANGE-1, &color_trackbarWasChanged);
@@ -737,25 +723,25 @@ int main(int argc, char **argv)
             }
             // h, H, s, S, v, V
             if (i == 'h' || i == 'H' || i == 's' || i == 'S' || i == 'v' || i == 'V') {
-                cout << "please enter number for " << (char)i << ": ";
+                cout << "Please enter number for " << (char)i << ":" << endl;
                 countdigits = 0;
                 lastcommand = i;
             }
             // c, C
             else if (i == 'c' || i == 'C') {
-                cout << "please enter three numbers (and space between) for full HSV color definition: ";
+                cout << "Please enter three numbers (and space between) for full HSV color definition:" << endl;
                 countdigits = 0;
                 lastcommand = 'c';
             }
             // r, R
             else if (i == 'r' || i == 'R') {
-                cout << "please enter three numbers (and space between) for full HSV range definition: ";
+                cout << "Please enter three numbers (and space between) for full HSV range definition:" << endl;
                 countdigits = 0;
                 lastcommand = 'r';
             }
         }
         // digits and space (within lastcommand)
-        else if (i == ' ' || (i >= 48 && i <= 57)) {
+        else if (i == ' ' || (i >= '0' && i <= '9')) {
             digits[countdigits++] = (char)i;
             if (countdigits >= 40) {
                 lastcommand = 0;
@@ -847,7 +833,7 @@ int main(int argc, char **argv)
             }
             lastcommand = 0;
             countdigits = 0;
-        } 
+        }
         // draw blobs or not to draw blobs
         else if (i == 'd' || i == 'D') {
             iDrawBlobs = (iDrawBlobs + 1) % 3;
@@ -858,7 +844,7 @@ int main(int argc, char **argv)
             iHighlightChannel = (iHighlightChannel + 1) % 4;
             displayFilteredImage();
         }
-        
+
         // anything else
         else if (!lastcommand) {
             if (i != lasti) {
@@ -868,6 +854,6 @@ int main(int argc, char **argv)
 	}
 
 	cv::destroyAllWindows();
-	
+
 	return 0;
 }
